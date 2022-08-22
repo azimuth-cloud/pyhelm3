@@ -27,7 +27,8 @@ client = Client(executable = "/path/to/helm")
 # List the deployed releases
 releases = await client.list_releases(all = True, all_namespaces = True)
 for release in releases:
-    print(release.name, release.namespace)
+    revision = await release.current_revision()
+    print(release.name, release.namespace, revision.revision, str(revision.status))
 
 
 # Get the current revision for an existing release
@@ -67,4 +68,9 @@ print(
     revision.revision,
     str(revision.status)
 )
+
+
+# Uninstall a release
+revision = await client.get_current_revision("cert-manager", namespace = "cert-manager")
+await revision.release.uninstall(wait = True)
 ```
