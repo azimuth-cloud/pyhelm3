@@ -371,6 +371,9 @@ class ReleaseRevisionStatus(str, enum.Enum):
     #: Indicates that a rollback operation is underway for this revision
     PENDING_ROLLBACK = "pending-rollback"
 
+    def is_pending(self):
+        return self in {self.PENDING_INSTALL, self.PENDING_UPGRADE, self.PENDING_ROLLBACK}
+
 
 class HookEvent(str, enum.Enum):
     """
