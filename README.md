@@ -71,6 +71,9 @@ print(
 
 
 # Uninstall a release
+#   Via the revision
 revision = await client.get_current_revision("cert-manager", namespace = "cert-manager")
 await revision.release.uninstall(wait = True)
+#   Or directly by name
+await client.uninstall_release("cert-manager", namespace = "cert-manager", wait = True)
 ```

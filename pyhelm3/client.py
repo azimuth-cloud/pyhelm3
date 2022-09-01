@@ -1,7 +1,11 @@
+import contextlib
 import pathlib
+import shutil
 import typing as t
 
-from .command import Command
+import yaml
+
+from .command import Command, SafeLoader
 from .models import Chart, Release, ReleaseRevision
 
 
@@ -16,7 +20,8 @@ class Client:
     def __init__(
         self,
         command: t.Optional[Command] = None,
-        *,
+        /,
+        default_timeout: t.Union[int, str] = "5m",
         executable: str = "helm",
         history_max_revisions: int = 10,
         insecure_skip_tls_verify: bool = False,
@@ -24,46 +29,24 @@ class Client:
         unpack_directory: t.Optional[str] = None
     ):
         self._command = command or Command(
+            default_timeout = default_timeout,
             executable = executable,
             history_max_revisions = history_max_revisions,
             insecure_skip_tls_verify = insecure_skip_tls_verify,
             kubeconfig = kubeconfig,
             unpack_directory = unpack_directory
         )
-
-    def reconfigure(
-        self,
-        *,
-        executable: t.Optional[str] = None,
-        history_max_revisions: t.Optional[int] = None,
-        insecure_skip_tls_verify: t.Optional[bool] = None,
-        kubeconfig: t.Optional[pathlib.Path] = None,
-        unpack_directory: t.Optional[str] = None
-    ) -> ClientType:
-        """
-        Returns a new client based on this one but with the specified reconfiguration.
-
-        In particular, the new client shares a lock with this one.
-        """
-        command = self._command.reconfigure(
-            executable = executable,
-            history_max_revisions = history_max_revisions,
-            insecure_skip_tls_verify = insecure_skip_tls_verify,
-            kubeconfig = kubeconfig,
-            unpack_directory = unpack_directory
-        )
-        return self.__class__(command)
 
     async def get_chart(
         self,
-        chart_ref: str,
-        *,
+        chart_ref: t.Union[pathlib.Path, str],
+        /,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
     ) -> Chart:
         """
-        Returns the resolved chart for the given ref, chart and version.
+        Returns the resolved chart for the given ref, repo and version.
         """
         return Chart(
             self._command,
@@ -78,12 +61,47 @@ class Client:
             )
         )
 
+    @contextlib.asynccontextmanager
+    async def pull_chart(
+        self,
+        chart_ref: t.Union[pathlib.Path, str],
+        /,
+        devel: bool = False,
+        repo: t.Optional[str] = None,
+        version: t.Optional[str] = None
+    ) -> contextlib.AbstractAsyncContextManager[pathlib.Path]:
+        """
+        Context manager that pulls the specified chart and yields a chart object
+        whose ref is the unpacked chart directory.
+
+        Ensures that the directory is cleaned up when the context manager exits.
+        """
+        path = await self._command.pull(
+            chart_ref,
+            devel = devel,
+            repo = repo,
+            version = version
+        )
+        try:
+            # The path from pull is the managed directory containing the archive and unpacked chart
+            # We want the actual chart directory
+            chart_yaml = next(path.glob("**/Chart.yaml"))
+            chart_directory = chart_yaml.parent
+            # To save the overhead of another Helm command invocation, just read the Chart.yaml
+            with chart_yaml.open() as fh:
+                metadata = yaml.load(fh, Loader = SafeLoader)
+            # Yield the chart object
+            yield Chart(self._command, ref = chart_directory, metadata = metadata)
+        finally:
+            if path.is_dir():
+                shutil.rmtree(path)
+
     async def template_resources(
         self,
         chart: Chart,
         release_name: str,
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        *,
+        /,
         include_crds: bool = False,
         is_upgrade: bool = False,
         namespace: t.Optional[str] = None,
@@ -107,7 +125,7 @@ class Client:
 
     async def list_releases(
         self,
-        *,
+        /,
         all: bool = False,
         all_namespaces: bool = False,
         include_deployed: bool = True,
@@ -149,7 +167,7 @@ class Client:
     async def get_current_revision(
         self,
         release_name: str,
-        *,
+        /,
         namespace: t.Optional[str] = None
     ) -> ReleaseRevision:
         """
@@ -168,7 +186,7 @@ class Client:
         release_name: str,
         chart: Chart,
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        *,
+        /,
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         description: t.Optional[str] = None,
@@ -179,7 +197,7 @@ class Client:
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
-        timeout: t.Union[int, str] = "5m",
+        timeout: t.Union[int, str, None] = None,
         wait: bool = False
     ) -> ReleaseRevision:
         """
@@ -207,4 +225,28 @@ class Client:
                 wait = wait
             ),
             self._command
+        )
+
+    async def uninstall_release(
+        self,
+        release_name: str,
+        /,
+        dry_run: bool = False,
+        keep_history: bool = False,
+        namespace: t.Optional[str] = None,
+        no_hooks: bool = False,
+        timeout: t.Union[int, str, None] = None,
+        wait: bool = False
+    ):
+        """
+        Uninstall the named release.
+        """
+        await self._command.uninstall(
+            release_name,
+            dry_run = dry_run,
+            keep_history = keep_history,
+            namespace = namespace,
+            no_hooks = no_hooks,
+            timeout = timeout,
+            wait = wait
         )

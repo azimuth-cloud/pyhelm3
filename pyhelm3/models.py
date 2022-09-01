@@ -1,5 +1,6 @@
 import datetime
 import enum
+import pathlib
 import typing as t
 
 import yaml
@@ -12,7 +13,8 @@ from pydantic import (
     FilePath,
     AnyUrl,
     HttpUrl,
-    constr
+    constr,
+    validator
 )
 
 from .command import Command, SafeLoader
@@ -198,16 +200,33 @@ class Chart(ModelWithCommand):
     _crds: t.List[t.Dict[str, t.Any]] = PrivateAttr(None)
     _values: t.Dict[str, t.Any] = PrivateAttr(None)
 
+    @validator("ref")
+    def ref_is_abspath(cls, v):
+        """
+        If the ref is a path on the filesystem, make sure it is absolute.
+        """
+        if isinstance(v, pathlib.Path):
+            return v.resolve()
+        else:
+            return v
+
+    async def _run_command(self, command_method):
+        """
+        Runs the specified command for this chart.
+        """
+        method = getattr(self._command, command_method)
+        # We only need the kwargs if the ref is not a direct reference
+        if isinstance(self.ref, (pathlib.Path, HttpUrl)):
+            return await method(self.ref)
+        else:
+            return await method(self.ref, repo = self.repo, version = self.metadata.version)
+
     async def readme(self) -> str:
         """
         Returns the README for the chart.
         """
         if self._readme is None:
-            self._readme = await self._command.show_readme(
-                self.ref,
-                repo = self.repo,
-                version = self.metadata.version
-            )
+            self._readme = await self._run_command("show_readme")
         return self._readme
 
     async def crds(self) -> t.Iterable[t.Dict[str, t.Any]]:
@@ -215,13 +234,7 @@ class Chart(ModelWithCommand):
         Returns the CRDs for the chart.
         """
         if self._crds is None:
-            self._crds = list(
-                await self._command.show_crds(
-                    self.ref,
-                    repo = self.repo,
-                    version = self.metadata.version
-                )
-            )
+            self._crds = list(await self._run_command("show_crds"))
         return self._crds
 
     async def values(self) -> t.Dict[str, t.Any]:
@@ -229,11 +242,7 @@ class Chart(ModelWithCommand):
         Returns the values for the chart.
         """
         if self._values is None:
-            self._values = await self._command.show_values(
-                self.ref,
-                repo = self.repo,
-                version = self.metadata.version
-            )
+            self._values = await self._run_command("show_values")
         return self._values
 
 
@@ -298,18 +307,20 @@ class Release(ModelWithCommand):
 
     async def rollback(
         self,
-        revision: int,
-        *,
+        revision: t.Optional[int] = None,
+        /,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
         force: bool = False,
         no_hooks: bool = False,
         recreate_pods: bool = False,
-        timeout: t.Union[int, str] = "5m",
+        timeout: t.Union[int, str, None] = None,
         wait: bool = False
     ) -> ReleaseRevisionType:
         """
-        Rollback this release to the specified version and return the revision that was created.
+        Rollback this release to the specified version and return the resulting revision.
+
+        If no revision is specified, it will rollback to the previous release.
         """
         await self._command.rollback(
             self.name,
@@ -325,13 +336,109 @@ class Release(ModelWithCommand):
         )
         return await self.current_revision()
 
+    async def simulate_rollback(
+        self,
+        revision: int,
+        /,
+        # The number of lines of context to show around each diff
+        context_lines: t.Optional[int] = None,
+        # Indicates whether to show secret values in the diff
+        show_secrets: bool = True
+    ) -> str:
+        """
+        Simulate a rollback to the specified revision and return the diff.
+        """
+        return await self._command.diff_rollback(
+            self.name,
+            revision,
+            context_lines = context_lines,
+            namespace = self.namespace,
+            show_secrets = show_secrets
+        )
+
+    async def simulate_upgrade(
+        self,
+        chart: Chart,
+        values: t.Optional[t.Dict[str, t.Any]] = None,
+        /,
+        # The number of lines of context to show around each diff
+        context_lines: t.Optional[int] = None,
+        dry_run: bool = False,
+        no_hooks: bool = False,
+        reset_values: bool = False,
+        reuse_values: bool = False,
+        # Indicates whether to show secret values in the diff
+        show_secrets: bool = True,
+    ) -> str:
+        """
+        Simulate a rollback to the specified revision and return the diff.
+        """
+        return await self._command.diff_upgrade(
+            self.name,
+            chart.ref,
+            values,
+            # The number of lines of context to show around each diff
+            context_lines = context_lines,
+            dry_run = dry_run,
+            namespace = self.namespace,
+            no_hooks = no_hooks,
+            repo = chart.repo,
+            reset_values = reset_values,
+            reuse_values = reuse_values,
+            show_secrets = show_secrets,
+            version = chart.metadata.version
+        )
+
+    async def upgrade(
+        self,
+        chart: Chart,
+        values: t.Optional[t.Dict[str, t.Any]] = None,
+        /,
+        atomic: bool = False,
+        cleanup_on_fail: bool = False,
+        description: t.Optional[str] = None,
+        dry_run: bool = False,
+        force: bool = False,
+        no_hooks: bool = False,
+        reset_values: bool = False,
+        reuse_values: bool = False,
+        skip_crds: bool = False,
+        timeout: t.Union[int, str, None] = None,
+        wait: bool = False
+    ) -> ReleaseRevisionType:
+        """
+        Upgrade this release using the given chart and values and return the new revision.
+        """
+        return ReleaseRevision._from_status(
+            await self._command.install_or_upgrade(
+                self.name,
+                chart.ref,
+                values,
+                atomic = atomic,
+                cleanup_on_fail = cleanup_on_fail,
+                description = description,
+                dry_run = dry_run,
+                force = force,
+                namespace = self.namespace,
+                no_hooks = no_hooks,
+                repo = chart.repo,
+                reset_values = reset_values,
+                reuse_values = reuse_values,
+                skip_crds = skip_crds,
+                timeout = timeout,
+                version = chart.metadata.version,
+                wait = wait
+            ),
+            self._command
+        )
+
     async def uninstall(
         self,
-        *,
+        /,
         dry_run: bool = False,
         keep_history: bool = False,
         no_hooks: bool = False,
-        timeout: t.Union[int, str] = "5m",
+        timeout: t.Union[int, str, None] = None,
         wait: bool = False
     ):
         """
@@ -370,9 +477,6 @@ class ReleaseRevisionStatus(str, enum.Enum):
     PENDING_UPGRADE = "pending-upgrade"
     #: Indicates that a rollback operation is underway for this revision
     PENDING_ROLLBACK = "pending-rollback"
-
-    def is_pending(self):
-        return self in {self.PENDING_INSTALL, self.PENDING_UPGRADE, self.PENDING_ROLLBACK}
 
 
 class HookEvent(str, enum.Enum):
@@ -496,7 +600,7 @@ class ReleaseRevision(ModelWithCommand):
                 events = hook["events"],
                 delete_policies = hook.get("delete_policies", [])
             )
-            for hook in status["hooks"]
+            for hook in status.get("hooks", [])
         ]
         self.resources_ = list(yaml.load_all(status["manifest"], Loader = SafeLoader))
 
@@ -560,6 +664,27 @@ class ReleaseRevision(ModelWithCommand):
                 revision = self.revision
             ),
             self._command
+        )
+
+    async def diff(
+        self,
+        other_revision: int,
+        /,
+        # The number of lines of context to show around each diff
+        context_lines: t.Optional[int] = None,
+        # Indicates whether to show secret values in the diff
+        show_secrets: bool = True
+    ) -> str:
+        """
+        Returns the diff between this revision and the specified revision.
+        """
+        return await self._command.diff_revision(
+            self.release.name,
+            self.revision,
+            other_revision,
+            context_lines = context_lines,
+            namespace = self.release.namespace,
+            show_secrets = show_secrets
         )
 
     @classmethod
