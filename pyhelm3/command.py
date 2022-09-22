@@ -183,10 +183,12 @@ class Command:
             # Parse some expected errors into specific exceptions
             if "release: not found" in stderr_str:
                 error_cls = errors.ReleaseNotFoundError
-            elif CHART_NOT_FOUND.search(stderr_str) is not None:
-                error_cls = errors.ChartNotFoundError
             elif "failed to render chart" in stderr_str:
                 error_cls = errors.FailedToRenderChartError
+            elif "rendered manifests contain a resource that already exists" in stderr_str:
+                error_cls = errors.ResourceAlreadyExistsError
+            elif CHART_NOT_FOUND.search(stderr_str) is not None:
+                error_cls = errors.ChartNotFoundError
             elif CONNECTION_ERROR.search(stderr_str) is not None:
                 error_cls = errors.ConnectionError
             else:
@@ -321,6 +323,8 @@ class Command:
             "--allow-unreleased",
             "--no-color",
             "--normalize-manifests",
+            # Disable OpenAPI validation as we still want the diff to work when CRDs change
+            "--disable-openapi-validation",
             # We pass the values using stdin
             "--values", "-",
         ]

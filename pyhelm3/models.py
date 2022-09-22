@@ -62,8 +62,8 @@ class ChartDependency(BaseModel):
         ...,
         description = "The version of the chart. Can be a SemVer range."
     )
-    repository: t.Optional[NonEmptyString] = Field(
-        None,
+    repository: str = Field(
+        "",
         description = "The repository URL or alias."
     )
     condition: t.Optional[NonEmptyString] = Field(

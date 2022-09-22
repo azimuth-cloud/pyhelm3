@@ -31,3 +31,9 @@ class ReleaseNotFoundError(Error):
     """
     Raised when a release is not found.
     """
+
+
+class ResourceAlreadyExistsError(Error):
+    """
+    Raised when Helm attempts to create a resource that already exists.
+    """
