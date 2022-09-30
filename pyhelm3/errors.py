@@ -37,3 +37,9 @@ class ResourceAlreadyExistsError(Error):
     """
     Raised when Helm attempts to create a resource that already exists.
     """
+
+
+class CommandCancelledError(Error):
+    """
+    Raised when a Helm command is cancelled.
+    """

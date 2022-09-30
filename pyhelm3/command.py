@@ -173,7 +173,13 @@ class Command:
             stdout = asyncio.subprocess.PIPE,
             stderr = asyncio.subprocess.PIPE
         )
-        stdout, stderr = await proc.communicate(input)
+        try:
+            stdout, stderr = await proc.communicate(input)
+        except asyncio.CancelledError:
+            # If the asyncio task is cancelled, terminate the Helm process but let the
+            # process handle the termination and exit
+            proc.terminate()
+            stdout, stderr = await proc.communicate()
         if proc.returncode == 0:
             self._logger.info("command succeeded: \"%s\"", command)
             return stdout
@@ -181,7 +187,9 @@ class Command:
             self._logger.warning("command failed: \"%s\"", command)
             stderr_str = stderr.decode().lower()
             # Parse some expected errors into specific exceptions
-            if "release: not found" in stderr_str:
+            if "context canceled" in stderr_str:
+                error_cls = errors.CommandCancelledError
+            elif "release: not found" in stderr_str:
                 error_cls = errors.ReleaseNotFoundError
             elif "failed to render chart" in stderr_str:
                 error_cls = errors.FailedToRenderChartError
