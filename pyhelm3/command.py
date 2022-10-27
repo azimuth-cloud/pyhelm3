@@ -193,6 +193,8 @@ class Command:
                 error_cls = errors.ReleaseNotFoundError
             elif "failed to render chart" in stderr_str:
                 error_cls = errors.FailedToRenderChartError
+            elif "execution error" in stderr_str:
+                error_cls = errors.FailedToRenderChartError
             elif "rendered manifests contain a resource that already exists" in stderr_str:
                 error_cls = errors.ResourceAlreadyExistsError
             elif CHART_NOT_FOUND.search(stderr_str) is not None:
