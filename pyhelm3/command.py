@@ -154,6 +154,15 @@ class Command:
         self._kubeconfig = kubeconfig
         self._unpack_directory = unpack_directory
 
+    def _log_format(self, argument):
+        argument = str(argument)
+        if argument == "-":
+            return "<stdin>"
+        elif "\n" in argument:
+            return "<multi-line string>"
+        else:
+            return argument
+
     async def run(self, command: t.List[str], input: t.Optional[bytes] = None) -> bytes:
         """
         Run the given Helm command with the given input as stdin and 
@@ -162,12 +171,14 @@ class Command:
         if self._kubeconfig:
             command.extend(["--kubeconfig", self._kubeconfig])
         # The command must be made up of str and bytes, so convert anything that isn't
-        command = shlex.join(
+        shell_formatted_command = shlex.join(
             part if isinstance(part, (str, bytes)) else str(part)
             for part in command
         )
+        log_formatted_command = shlex.join(self._log_format(part) for part in command)
+        self._logger.info("running command: %s", log_formatted_command)
         proc = await asyncio.create_subprocess_shell(
-            command,
+            shell_formatted_command,
             # Only make stdin a pipe if we have input to feed it
             stdin = asyncio.subprocess.PIPE if input is not None else None,
             stdout = asyncio.subprocess.PIPE,
@@ -181,10 +192,10 @@ class Command:
             proc.terminate()
             stdout, stderr = await proc.communicate()
         if proc.returncode == 0:
-            self._logger.info("command succeeded: \"%s\"", command)
+            self._logger.info("command succeeded: %s", log_formatted_command)
             return stdout
         else:
-            self._logger.warning("command failed: \"%s\"", command)
+            self._logger.warning("command failed: %s", log_formatted_command)
             stderr_str = stderr.decode().lower()
             # Parse some expected errors into specific exceptions
             if "context canceled" in stderr_str:
