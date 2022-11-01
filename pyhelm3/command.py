@@ -483,6 +483,7 @@ class Command:
         /,
         atomic: bool = False,
         cleanup_on_fail: bool = False,
+        create_namespace: bool = True,
         description: t.Optional[str] = None,
         devel: bool = False,
         dry_run: bool = False,
@@ -504,7 +505,6 @@ class Command:
             "upgrade",
             release_name,
             chart_ref,
-            "--create-namespace",
             "--history-max", self._history_max_revisions,
             "--install",
             "--output", "json",
@@ -517,6 +517,8 @@ class Command:
             command.append("--atomic")
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
+        if create_namespace:
+            command.append("--create-namespace")
         if description:
             command.extend(["--description", description])
         if devel:
