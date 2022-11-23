@@ -308,7 +308,7 @@ class Release(ModelWithCommand):
     async def rollback(
         self,
         revision: t.Optional[int] = None,
-        /,
+        *,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
         force: bool = False,
@@ -339,7 +339,7 @@ class Release(ModelWithCommand):
     async def simulate_rollback(
         self,
         revision: int,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         # Indicates whether to show secret values in the diff
@@ -360,7 +360,7 @@ class Release(ModelWithCommand):
         self,
         chart: Chart,
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         dry_run: bool = False,
@@ -393,7 +393,7 @@ class Release(ModelWithCommand):
         self,
         chart: Chart,
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        /,
+        *,
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         description: t.Optional[str] = None,
@@ -434,7 +434,7 @@ class Release(ModelWithCommand):
 
     async def uninstall(
         self,
-        /,
+        *,
         dry_run: bool = False,
         keep_history: bool = False,
         no_hooks: bool = False,
@@ -669,7 +669,7 @@ class ReleaseRevision(ModelWithCommand):
     async def diff(
         self,
         other_revision: int,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         # Indicates whether to show secret values in the diff

@@ -138,7 +138,7 @@ class Command:
     """
     def __init__(
         self,
-        /,
+        *,
         default_timeout: t.Union[int, str] = "5m",
         executable: str = "helm",
         history_max_revisions: int = 10,
@@ -220,7 +220,7 @@ class Command:
         self,
         release_name: str,
         other_release_name: str,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         namespace: t.Optional[str] = None,
@@ -252,7 +252,7 @@ class Command:
         revision: int,
         # If not specified, the diff is with latest
         other_revision: t.Optional[int] = None,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         namespace: t.Optional[str] = None,
@@ -286,7 +286,7 @@ class Command:
         release_name: str,
         # The revision to simulate rolling back to
         revision: t.Optional[int] = None,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         namespace: t.Optional[str] = None,
@@ -318,7 +318,7 @@ class Command:
         release_name: str,
         chart_ref: t.Union[pathlib.Path, str],
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        /,
+        *,
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         devel: bool = False,
@@ -380,7 +380,7 @@ class Command:
     async def get_chart_metadata(
         self,
         release_name: str,
-        /,
+        *,
         namespace: t.Optional[str] = None,
         revision: t.Optional[int] = None
     ):
@@ -405,7 +405,7 @@ class Command:
     async def get_hooks(
         self,
         release_name: str,
-        /,
+        *,
         namespace: t.Optional[str] = None,
         revision: t.Optional[int] = None
      ) -> t.Iterable[t.Dict[str, t.Any]]:
@@ -422,7 +422,7 @@ class Command:
     async def get_resources(
         self,
         release_name: str,
-        /,
+        *,
         namespace: t.Optional[str] = None,
         revision: t.Optional[int] = None
      ) -> t.Iterable[t.Dict[str, t.Any]]:
@@ -439,7 +439,7 @@ class Command:
     async def get_values(
         self,
         release_name: str,
-        /,
+        *,
         computed: bool = False,
         namespace: t.Optional[str] = None,
         revision: t.Optional[int] = None
@@ -461,7 +461,7 @@ class Command:
     async def history(
         self,
         release_name: str,
-        /,
+        *,
         max_revisions: int = 256,
         namespace: t.Optional[str] = None
      ) -> t.Iterable[t.Dict[str, t.Any]]:
@@ -480,7 +480,7 @@ class Command:
         release_name: str,
         chart_ref: t.Union[pathlib.Path, str],
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        /,
+        *,
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
@@ -549,7 +549,7 @@ class Command:
 
     async def list(
         self,
-        /,
+        *,
         all: bool = False,
         all_namespaces: bool = False,
         include_deployed: bool = True,
@@ -594,7 +594,7 @@ class Command:
     async def pull(
         self,
         chart_ref: t.Union[pathlib.Path, str],
-        /,
+        *,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
@@ -661,7 +661,7 @@ class Command:
         self,
         release_name: str,
         revision: t.Optional[int],
-        /,
+        *,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
         force: bool = False,
@@ -704,7 +704,7 @@ class Command:
     async def search(
         self,
         search_keyword: t.Optional[str] = None,
-        /,
+        *,
         all_versions: bool = False,
         devel: bool = False,
         version_constraints: t.Optional[str] = None
@@ -726,7 +726,7 @@ class Command:
     async def show_chart(
         self,
         chart_ref: t.Union[pathlib.Path, str],
-        /,
+        *,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
@@ -748,7 +748,7 @@ class Command:
     async def show_crds(
         self,
         chart_ref: t.Union[pathlib.Path, str],
-        /,
+        *,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
@@ -811,7 +811,7 @@ class Command:
     async def show_readme(
         self,
         chart_ref: t.Union[pathlib.Path, str],
-        /,
+        *,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
@@ -833,7 +833,7 @@ class Command:
     async def show_values(
         self,
         chart_ref: t.Union[pathlib.Path, str],
-        /,
+        *,
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
@@ -855,7 +855,7 @@ class Command:
     async def status(
         self,
         release_name: str,
-        /,
+        *,
         namespace: t.Optional[str] = None,
         revision: t.Optional[int] = None,
     ):
@@ -874,7 +874,7 @@ class Command:
         release_name: str,
         chart_ref: t.Union[pathlib.Path, str],
         values: t.Optional[t.Dict[str, t.Any]] = None,
-        /,
+        *,
         devel: bool = False,
         include_crds: bool = False,
         is_upgrade: bool = False,
@@ -916,7 +916,7 @@ class Command:
     async def uninstall(
         self,
         release_name: str,
-        /,
+        *,
         dry_run: bool = False,
         keep_history: bool = False,
         namespace: t.Optional[str] = None,
