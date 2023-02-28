@@ -208,6 +208,8 @@ class Command:
                 error_cls = errors.FailedToRenderChartError
             elif "rendered manifests contain a resource that already exists" in stderr_str:
                 error_cls = errors.ResourceAlreadyExistsError
+            elif "is invalid" in stderr_str:
+                error_cls = errors.InvalidResourceError
             elif CHART_NOT_FOUND.search(stderr_str) is not None:
                 error_cls = errors.ChartNotFoundError
             elif CONNECTION_ERROR.search(stderr_str) is not None:

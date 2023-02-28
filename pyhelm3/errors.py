@@ -39,6 +39,12 @@ class ResourceAlreadyExistsError(Error):
     """
 
 
+class InvalidResourceError(Error):
+    """
+    Raised when Helm attempts to create or update a resource in a way that is not valid.
+    """
+
+
 class CommandCancelledError(Error):
     """
     Raised when a Helm command is cancelled.
