@@ -191,6 +191,8 @@ class Command:
             # process handle the termination and exit
             proc.terminate()
             stdout, stderr = await proc.communicate()
+            # Once the process has exited, re-raise the cancelled error
+            raise
         if proc.returncode == 0:
             self._logger.info("command succeeded: %s", log_formatted_command)
             return stdout
