@@ -202,6 +202,10 @@ class Command:
             # Parse some expected errors into specific exceptions
             if "context canceled" in stderr_str:
                 error_cls = errors.CommandCancelledError
+            # Any error referencing etcd is a connection error
+            # This must be before other rules, as it sometimes occurs alonside a not found error
+            elif "etcdserver" in stderr_str:
+                error_cls = errors.ConnectionError
             elif "release: not found" in stderr_str:
                 error_cls = errors.ReleaseNotFoundError
             elif "failed to render chart" in stderr_str:
