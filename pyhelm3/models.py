@@ -7,15 +7,17 @@ import yaml
 
 from pydantic import (
     BaseModel,
+    TypeAdapter,
     Field,
     PrivateAttr,
     DirectoryPath,
     FilePath,
-    AnyUrl,
-    HttpUrl,
+    AnyUrl as PydanticAnyUrl,
+    HttpUrl as PydanticHttpUrl,
     constr,
-    validator
+    field_validator
 )
+from pydantic.functional_validators import AfterValidator
 
 from .command import Command, SafeLoader
 
@@ -37,17 +39,28 @@ NonEmptyString = constr(min_length = 1)
 
 
 #: Type for a name (chart or release)
-Name = constr(regex = r"^[a-z0-9-]+$")
+Name = constr(pattern = r"^[a-z0-9-]+$")
 
 
 #: Type for a SemVer version
-SemVerVersion = constr(regex = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
+SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
 
 
 #: Type variables for forward references to the chart and release types
 ChartType = t.TypeVar("ChartType", bound = "Chart")
 ReleaseType = t.TypeVar("ReleaseType", bound = "Release")
 ReleaseRevisionType = t.TypeVar("ReleaseRevisionType", bound = "ReleaseRevision")
+
+
+#: Type annotation for validating a string using a Pydantic type
+def validate_str_as(validate_type):
+    adapter = TypeAdapter(validate_type)
+    return lambda v: str(adapter.validate_python(v))
+
+
+#: Annotated string types for URLs
+AnyUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticAnyUrl))]
+HttpUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticHttpUrl))]
 
 
 class ChartDependency(BaseModel):
@@ -200,7 +213,7 @@ class Chart(ModelWithCommand):
     _crds: t.List[t.Dict[str, t.Any]] = PrivateAttr(None)
     _values: t.Dict[str, t.Any] = PrivateAttr(None)
 
-    @validator("ref")
+    @field_validator("ref")
     def ref_is_abspath(cls, v):
         """
         If the ref is a path on the filesystem, make sure it is absolute.
