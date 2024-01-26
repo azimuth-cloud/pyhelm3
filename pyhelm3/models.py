@@ -14,10 +14,12 @@ from pydantic import (
     FilePath,
     AnyUrl as PydanticAnyUrl,
     HttpUrl as PydanticHttpUrl,
+    UrlConstraints as PydanticUrlConstraints,
     constr,
     field_validator
 )
 from pydantic.functional_validators import AfterValidator
+from typing_extensions import Annotated
 
 from .command import Command, SafeLoader
 
@@ -44,6 +46,10 @@ Name = constr(pattern = r"^[a-z0-9-]+$")
 
 #: Type for a SemVer version
 SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
+
+
+#: Type for an OCI scheme URI
+OciUrl = Annotated[PydanticAnyUrl, PydanticUrlConstraints(allowed_schemes=["oci"], host_required=True)]
 
 
 #: Type variables for forward references to the chart and release types
@@ -195,7 +201,7 @@ class Chart(ModelWithCommand):
     """
     Model for a reference to a chart.
     """
-    ref: t.Union[DirectoryPath, FilePath, HttpUrl, Name] = Field(
+    ref: t.Union[DirectoryPath, FilePath, HttpUrl, OciUrl, Name] = Field(
         ...,
         description = (
             "The chart reference. "
