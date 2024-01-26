@@ -235,7 +235,7 @@ class Chart(ModelWithCommand):
         """
         method = getattr(self._command, command_method)
         # We only need the kwargs if the ref is not a direct reference
-        if isinstance(self.ref, (pathlib.Path, HttpUrl)):
+        if isinstance(self.ref, pathlib.Path) or str(self.ref).startswith(('http', 'https', 'oci')):
             return await method(self.ref)
         else:
             return await method(self.ref, repo = self.repo, version = self.metadata.version)
