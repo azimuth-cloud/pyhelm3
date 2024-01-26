@@ -52,6 +52,10 @@ SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-
 OciUrl = Annotated[PydanticAnyUrl, PydanticUrlConstraints(allowed_schemes=["oci"], host_required=True)]
 
 
+#: Type for an S3 scheme URI
+S3Url = Annotated[PydanticAnyUrl, PydanticUrlConstraints(allowed_schemes=["s3"], host_required=True)]
+
+
 #: Type variables for forward references to the chart and release types
 ChartType = t.TypeVar("ChartType", bound = "Chart")
 ReleaseType = t.TypeVar("ReleaseType", bound = "Release")
@@ -211,7 +215,7 @@ class Chart(ModelWithCommand):
             "be given."
         )
     )
-    repo: t.Optional[HttpUrl] = Field(None, description = "The repository URL.")
+    repo: t.Optional[t.Union[HttpUrl, S3Url]] = Field(None, description = "The repository URL.")
     metadata: ChartMetadata = Field(..., description = "The metadata for the chart.")
 
     # Private attributes used to cache attributes
