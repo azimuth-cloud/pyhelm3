@@ -144,6 +144,7 @@ class Command:
         history_max_revisions: int = 10,
         insecure_skip_tls_verify: bool = False,
         kubeconfig: t.Optional[pathlib.Path] = None,
+        kubecontext: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None
     ):
         self._logger = logging.getLogger(__name__)
@@ -152,6 +153,7 @@ class Command:
         self._history_max_revisions = history_max_revisions
         self._insecure_skip_tls_verify = insecure_skip_tls_verify
         self._kubeconfig = kubeconfig
+        self._kubecontext = kubecontext
         self._unpack_directory = unpack_directory
 
     def _log_format(self, argument):
@@ -170,6 +172,8 @@ class Command:
         command = [self._executable] + command
         if self._kubeconfig:
             command.extend(["--kubeconfig", self._kubeconfig])
+        if self._kubecontext:
+            command.extend(["--kube-context", self._kubecontext])
         # The command must be made up of str and bytes, so convert anything that isn't
         shell_formatted_command = shlex.join(
             part if isinstance(part, (str, bytes)) else str(part)

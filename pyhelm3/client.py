@@ -53,6 +53,7 @@ class Client:
         history_max_revisions: int = 10,
         insecure_skip_tls_verify: bool = False,
         kubeconfig: t.Optional[pathlib.Path] = None,
+        kubecontext: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None
     ):
         self._command = command or Command(
@@ -61,6 +62,7 @@ class Client:
             history_max_revisions = history_max_revisions,
             insecure_skip_tls_verify = insecure_skip_tls_verify,
             kubeconfig = kubeconfig,
+            kubecontext = kubecontext,
             unpack_directory = unpack_directory
         )
 
