@@ -2,6 +2,7 @@ import datetime
 import enum
 import pathlib
 import typing as t
+import annotated_types as at
 
 import yaml
 
@@ -59,8 +60,8 @@ def validate_str_as(validate_type):
 
 
 #: Annotated string types for URLs
-AnyUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticAnyUrl))]
-HttpUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticHttpUrl))]
+AnyUrl = at.Annotated[str, AfterValidator(validate_str_as(PydanticAnyUrl))]
+HttpUrl = at.Annotated[str, AfterValidator(validate_str_as(PydanticHttpUrl))]
 
 
 class ChartDependency(BaseModel):

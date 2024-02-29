@@ -96,7 +96,7 @@ class Client:
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
-    ) -> contextlib.AbstractAsyncContextManager[pathlib.Path]:
+    ) -> t.AsyncGenerator[Chart, None]:
         """
         Context manager that pulls the specified chart and yields a chart object
         whose ref is the unpacked chart directory.
