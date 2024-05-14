@@ -20,6 +20,8 @@ from pyhelm3 import Client
 client = Client()
 # Specify the kubeconfig file to use
 client = Client(kubeconfig = "/path/to/kubeconfig")
+# Specify the kubecontext to use
+client = Client(kubecontext = "kubecontext")
 # Specify a custom Helm executable (by default, we expect 'helm' to be on the PATH)
 client = Client(executable = "/path/to/helm")
 
