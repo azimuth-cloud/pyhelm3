@@ -193,8 +193,14 @@ class Command:
         except asyncio.CancelledError:
             # If the asyncio task is cancelled, terminate the Helm process but let the
             # process handle the termination and exit
-            proc.terminate()
-            stdout, stderr = await proc.communicate()
+            # We occassionally see a ProcessLookupError here if the process finished between
+            # us being cancelled and terminating the process, which we ignore as that is our
+            # target state anyway
+            try:
+                proc.terminate()
+                _ = await proc.communicate()
+            except ProcessLookupError:
+                pass
             # Once the process has exited, re-raise the cancelled error
             raise
         if proc.returncode == 0:
