@@ -323,7 +323,7 @@ class Client:
             if revision_chart.version != chart.metadata.version:
                 return True
             # If the values have changed from the deployed release, we should redeploy
-            revision_values = await current_revision.values()
+            revision_values = (await current_revision.values()) or {}
             if revision_values != values:
                 return True
             # If the chart and values are the same, there is nothing to do
