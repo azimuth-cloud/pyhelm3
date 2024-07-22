@@ -474,7 +474,7 @@ class Command:
             command.extend(["--revision", revision])
         if namespace:
             command.extend(["--namespace", namespace])
-        return json.loads(await self.run(command))
+        return json.loads(await self.run(command)) or {}
 
     async def history(
         self,
