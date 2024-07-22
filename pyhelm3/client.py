@@ -98,7 +98,7 @@ class Client:
         devel: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
-    ) -> contextlib.AbstractAsyncContextManager[pathlib.Path]:
+    ) -> t.AsyncIterator[pathlib.Path]:
         """
         Context manager that pulls the specified chart and yields a chart object
         whose ref is the unpacked chart directory.
@@ -323,7 +323,7 @@ class Client:
             if revision_chart.version != chart.metadata.version:
                 return True
             # If the values have changed from the deployed release, we should redeploy
-            revision_values = (await current_revision.values()) or {}
+            revision_values = await current_revision.values()
             if revision_values != values:
                 return True
             # If the chart and values are the same, there is nothing to do
