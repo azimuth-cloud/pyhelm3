@@ -39,7 +39,7 @@ NonEmptyString = constr(min_length = 1)
 
 
 #: Type for a name (chart or release)
-Name = constr(pattern = r"^[a-z0-9-]+$")
+Name = constr(pattern = r"^[a-zA-Z0-9-]+$")
 
 
 #: Type for a SemVer version
