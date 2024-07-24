@@ -191,6 +191,31 @@ class ChartMetadata(BaseModel):
     )
 
 
+class ChartVersion(ModelWithCommand):
+    """
+    Model for chart version, from search results
+    """
+    name: NonEmptyString = Field(
+        ...,
+        description = "The full name of the chart."
+    )
+    version: SemVerVersion = Field(
+        ...,
+        description = "The version of the chart."
+    )
+    description: str = Field(
+        None,
+        description = "A single-sentence description of the chart."
+    )
+   
+    app_version: NonEmptyString = Field(
+        None,
+        alias = "appVersion",
+        description = (
+            "The version of the app that this chart deploys. "
+        )
+    )
+
 class Chart(ModelWithCommand):
     """
     Model for a reference to a chart.

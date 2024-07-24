@@ -8,7 +8,7 @@ import yaml
 
 from .command import Command, SafeLoader
 from .errors import ReleaseNotFoundError
-from .models import Chart, Release, ReleaseRevision, ReleaseRevisionStatus
+from .models import Chart, Release, ReleaseRevision, ReleaseRevisionStatus, ChartVersion
 
 
 def mergeconcat(
@@ -208,6 +208,31 @@ class Client:
             ),
             self._command
         )
+
+    async def search_chart(
+        self,
+        search_keyword: str = None,
+        all_versions: bool = False,
+        devel: bool = False,        
+    ) -> t.Iterable[ChartVersion]:
+        """
+        Returns an iterable of the available versions.
+        """
+        return (
+            ChartVersion(
+                self._command,
+                name = release["name"],
+                version = release["version"],
+                description = release["description"],
+                app_version = release["app_version"]
+            )
+            for release in await self._command.search(
+                search_keyword=search_keyword,
+                all_versions=all_versions,
+                devel=devel,
+            )
+        )
+
 
     async def install_or_upgrade_release(
         self,
