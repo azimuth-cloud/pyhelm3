@@ -14,10 +14,12 @@ from pydantic import (
     FilePath,
     AnyUrl as PydanticAnyUrl,
     HttpUrl as PydanticHttpUrl,
+    UrlConstraints as PydanticUrlConstraints,
     constr,
     field_validator
 )
 from pydantic.functional_validators import AfterValidator
+from typing_extensions import Annotated
 
 from .command import Command, SafeLoader
 
@@ -44,6 +46,14 @@ Name = constr(pattern = r"^[a-z0-9-]+$")
 
 #: Type for a SemVer version
 SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
+
+
+#: Type for an OCI scheme URI
+OciUrl = Annotated[PydanticAnyUrl, PydanticUrlConstraints(allowed_schemes=["oci"], host_required=True)]
+
+
+#: Type for an S3 scheme URI
+S3Url = Annotated[PydanticAnyUrl, PydanticUrlConstraints(allowed_schemes=["s3"], host_required=True)]
 
 
 #: Type variables for forward references to the chart and release types
@@ -195,7 +205,7 @@ class Chart(ModelWithCommand):
     """
     Model for a reference to a chart.
     """
-    ref: t.Union[DirectoryPath, FilePath, HttpUrl, Name] = Field(
+    ref: t.Union[DirectoryPath, FilePath, HttpUrl, OciUrl, Name] = Field(
         ...,
         description = (
             "The chart reference. "
@@ -205,7 +215,7 @@ class Chart(ModelWithCommand):
             "be given."
         )
     )
-    repo: t.Optional[HttpUrl] = Field(None, description = "The repository URL.")
+    repo: t.Optional[t.Union[HttpUrl, S3Url]] = Field(None, description = "The repository URL.")
     metadata: ChartMetadata = Field(..., description = "The metadata for the chart.")
 
     # Private attributes used to cache attributes
@@ -229,7 +239,7 @@ class Chart(ModelWithCommand):
         """
         method = getattr(self._command, command_method)
         # We only need the kwargs if the ref is not a direct reference
-        if isinstance(self.ref, (pathlib.Path, HttpUrl)):
+        if isinstance(self.ref, pathlib.Path) or str(self.ref).startswith(('http', 'https', 'oci')):
             return await method(self.ref)
         else:
             return await method(self.ref, repo = self.repo, version = self.metadata.version)
