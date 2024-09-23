@@ -145,6 +145,8 @@ class Command:
         insecure_skip_tls_verify: bool = False,
         kubeconfig: t.Optional[pathlib.Path] = None,
         kubecontext: t.Optional[str] = None,
+        kubeapiserver: t.Optional[str] = None,
+        kubetoken: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None
     ):
         self._logger = logging.getLogger(__name__)
@@ -154,6 +156,8 @@ class Command:
         self._insecure_skip_tls_verify = insecure_skip_tls_verify
         self._kubeconfig = kubeconfig
         self._kubecontext = kubecontext
+        self._kubeapiserver = kubeapiserver
+        self._kubetoken = kubetoken
         self._unpack_directory = unpack_directory
 
     def _log_format(self, argument):
@@ -174,6 +178,10 @@ class Command:
             command.extend(["--kubeconfig", self._kubeconfig])
         if self._kubecontext:
             command.extend(["--kube-context", self._kubecontext])
+        if self._kubeapiserver:
+            command.extend(["--kube-apiserver", self._kubeapiserver])
+        if self._kubetoken:
+            command.extend(["--kube-token", self._kubetoken])
         # The command must be made up of str and bytes, so convert anything that isn't
         shell_formatted_command = shlex.join(
             part if isinstance(part, (str, bytes)) else str(part)
