@@ -182,6 +182,8 @@ class Command:
             command.extend(["--kube-apiserver", self._kubeapiserver])
         if self._kubetoken:
             command.extend(["--kube-token", self._kubetoken])
+        if self._insecure_skip_tls_verify:
+            command.append("--kube-insecure-skip-tls-verify")
         # The command must be made up of str and bytes, so convert anything that isn't
         shell_formatted_command = shlex.join(
             part if isinstance(part, (str, bytes)) else str(part)
@@ -553,8 +555,6 @@ class Command:
             command.append("--dry-run")
         if force:
             command.append("--force")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if namespace:
             command.extend(["--namespace", namespace])
         if no_hooks:
@@ -635,8 +635,6 @@ class Command:
         command = ["pull", chart_ref, "--destination", destination, "--untar"]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -657,8 +655,6 @@ class Command:
         Returns the new repo list on success.
         """
         command = ["repo", "add", name, url, "--force-update"]
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         await self.run(command)
 
     async def repo_update(self, *names: str):
@@ -763,8 +759,6 @@ class Command:
         command = ["show", "chart", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -788,8 +782,6 @@ class Command:
         # command = ["show", "crds", chart_ref]
         # if devel:
         #     command.append("--devel")
-        # if self._insecure_skip_tls_verify:
-        #     command.append("--insecure-skip-tls-verify")
         # if repo:
         #     command.extend(["--repo", repo])
         # if version:
@@ -848,8 +840,6 @@ class Command:
         command = ["show", "readme", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -870,8 +860,6 @@ class Command:
         command = ["show", "values", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -922,8 +910,6 @@ class Command:
         ]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if is_upgrade:
             command.append("--is-upgrade")
         if namespace:
