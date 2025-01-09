@@ -17,6 +17,10 @@ from pydantic import (
     constr,
     field_validator
 )
+
+from typing_extensions import Annotated
+OCIPath = Annotated[str, Field(pattern=r"oci:\/\/*")]
+
 from pydantic.functional_validators import AfterValidator
 
 from .command import Command, SafeLoader
@@ -195,7 +199,7 @@ class Chart(ModelWithCommand):
     """
     Model for a reference to a chart.
     """
-    ref: t.Union[DirectoryPath, FilePath, HttpUrl, Name] = Field(
+    ref: t.Union[DirectoryPath, FilePath, HttpUrl, Name, OCIPath] = Field(
         ...,
         description = (
             "The chart reference. "
