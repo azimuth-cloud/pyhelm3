@@ -1,3 +1,9 @@
+[tool.poetry]
+name = "pyhelm3"
+version = "0.4.0"
+description = "Python library for managing Helm releases using Helm 3 (i.e. Tiller-less Helm)."
+authors = []
+
 [build-system]
 requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
 build-backend = "setuptools.build_meta"
