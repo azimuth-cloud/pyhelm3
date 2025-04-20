@@ -230,7 +230,8 @@ class Client:
         reuse_values: bool = False,
         skip_crds: bool = False,
         timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        wait: bool = False,
+        disable_validation: bool = False,
     ) -> ReleaseRevision:
         """
         Install or upgrade the named release using the given chart and values and return
@@ -255,7 +256,8 @@ class Client:
                 skip_crds = skip_crds,
                 timeout = timeout,
                 version = chart.metadata.version,
-                wait = wait
+                wait = wait,
+                disable_validation = disable_validation,
             ),
             self._command
         )
