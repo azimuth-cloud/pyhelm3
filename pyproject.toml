@@ -3,3 +3,47 @@ requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # flake8-builtins
+    "A",
+    # Ruff rules
+    "RUF",
+    # flake8-async
+    "ASYNC",
+    # pyupgrade
+    "UP",
+    # tidy imports
+    "TID",
+    # sorted imports
+    "I",
+    # check complexity
+    "C90",
+    # pep8 naming
+    "N",
+]
+ignore = [
+    "UP038", # deprecated
+]
+
+[tool.mypy]
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+
+[tool.ruff.lint.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 5.
+max-complexity = 15
