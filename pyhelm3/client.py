@@ -12,12 +12,12 @@ from .models import Chart, Release, ReleaseRevision, ReleaseRevisionStatus
 
 
 def mergeconcat(
-    defaults: t.Dict[t.Any, t.Any],
-    *overrides: t.Dict[t.Any, t.Any]
-) -> t.Dict[t.Any, t.Any]:
+    defaults: dict[t.Any, t.Any], *overrides: dict[t.Any, t.Any]
+) -> dict[t.Any, t.Any]:
     """
     Deep-merge two or more dictionaries together. Lists are concatenated.
     """
+
     def mergeconcat2(defaults, overrides):
         if isinstance(defaults, dict) and isinstance(overrides, dict):
             merged = dict(defaults)
@@ -27,81 +27,82 @@ def mergeconcat(
                 else:
                     merged[key] = value
             return merged
-        elif isinstance(defaults, (list, tuple)) and isinstance(overrides, (list, tuple)):
+        elif isinstance(defaults, (list, tuple)) and isinstance(
+            overrides, (list, tuple)
+        ):
             merged = list(defaults)
             merged.extend(overrides)
             return merged
         else:
             return overrides if overrides is not None else defaults
+
     return functools.reduce(mergeconcat2, overrides, defaults)
 
 
 #: Bound type var for forward references
-ClientType = t.TypeVar("ClientType", bound = "Client")
+ClientType = t.TypeVar("ClientType", bound="Client")
 
 
 class Client:
     """
     Entrypoint for interactions with Helm.
     """
+
     def __init__(
         self,
-        command: t.Optional[Command] = None,
+        command: Command | None = None,
         *,
-        default_timeout: t.Union[int, str] = "5m",
+        default_timeout: int | str = "5m",
         executable: str = "helm",
         history_max_revisions: int = 10,
         insecure_skip_tls_verify: bool = False,
-        kubeconfig: t.Optional[pathlib.Path] = None,
-        kubecontext: t.Optional[str] = None,
-        kubeapiserver: t.Optional[str] = None,
-        kubetoken: t.Optional[str] = None,
-        unpack_directory: t.Optional[str] = None
+        kubeconfig: pathlib.Path | None = None,
+        kubecontext: str | None = None,
+        kubeapiserver: str | None = None,
+        kubetoken: str | None = None,
+        unpack_directory: str | None = None,
     ):
         self._command = command or Command(
-            default_timeout = default_timeout,
-            executable = executable,
-            history_max_revisions = history_max_revisions,
-            insecure_skip_tls_verify = insecure_skip_tls_verify,
-            kubeconfig = kubeconfig,
-            kubecontext = kubecontext,
-            kubeapiserver = kubeapiserver,
-            kubetoken = kubetoken,
-            unpack_directory = unpack_directory
+            default_timeout=default_timeout,
+            executable=executable,
+            history_max_revisions=history_max_revisions,
+            insecure_skip_tls_verify=insecure_skip_tls_verify,
+            kubeconfig=kubeconfig,
+            kubecontext=kubecontext,
+            kubeapiserver=kubeapiserver,
+            kubetoken=kubetoken,
+            unpack_directory=unpack_directory,
         )
 
     async def get_chart(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
+        repo: str | None = None,
+        version: str | None = None,
     ) -> Chart:
         """
         Returns the resolved chart for the given ref, repo and version.
         """
         return Chart(
             self._command,
-            ref = chart_ref,
-            repo = repo,
+            ref=chart_ref,
+            repo=repo,
             # Load the metadata for the specified args
-            metadata = await self._command.show_chart(
-                chart_ref,
-                devel = devel,
-                repo = repo,
-                version = version
-            )
+            metadata=await self._command.show_chart(
+                chart_ref, devel=devel, repo=repo, version=version
+            ),
         )
 
     @contextlib.asynccontextmanager
     async def pull_chart(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
+        repo: str | None = None,
+        version: str | None = None,
     ) -> t.AsyncIterator[pathlib.Path]:
         """
         Context manager that pulls the specified chart and yields a chart object
@@ -110,21 +111,20 @@ class Client:
         Ensures that the directory is cleaned up when the context manager exits.
         """
         path = await self._command.pull(
-            chart_ref,
-            devel = devel,
-            repo = repo,
-            version = version
+            chart_ref, devel=devel, repo=repo, version=version
         )
         try:
-            # The path from pull is the managed directory containing the archive and unpacked chart
+            # The path from pull is the managed directory containing the archive and
+            # unpacked chart
             # We want the actual chart directory
             chart_yaml = next(path.glob("**/Chart.yaml"))
             chart_directory = chart_yaml.parent
-            # To save the overhead of another Helm command invocation, just read the Chart.yaml
+            # To save the overhead of another Helm command invocation,
+            # just read the Chart.yaml
             with chart_yaml.open() as fh:
-                metadata = yaml.load(fh, Loader = SafeLoader)
+                metadata = yaml.load(fh, Loader=SafeLoader)
             # Yield the chart object
-            yield Chart(self._command, ref = chart_directory, metadata = metadata)
+            yield Chart(self._command, ref=chart_directory, metadata=metadata)
         finally:
             if path.is_dir():
                 shutil.rmtree(path)
@@ -133,12 +133,12 @@ class Client:
         self,
         chart: Chart,
         release_name: str,
-        *values: t.Dict[str, t.Any],
+        *values: dict[str, t.Any],
         include_crds: bool = False,
         is_upgrade: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Renders the templates from the given chart with the given values and returns
         the resources that would be produced.
@@ -147,18 +147,18 @@ class Client:
             release_name,
             chart.ref,
             mergeconcat(*values) if values else None,
-            include_crds = include_crds,
-            is_upgrade = is_upgrade,
-            namespace = namespace,
-            no_hooks = no_hooks,
-            repo = chart.repo,
-            version = chart.metadata.version
+            include_crds=include_crds,
+            is_upgrade=is_upgrade,
+            namespace=namespace,
+            no_hooks=no_hooks,
+            repo=chart.repo,
+            version=chart.metadata.version,
         )
 
     async def list_releases(
         self,
         *,
-        all: bool = False,
+        all: bool = False,  # noqa: A002
         all_namespaces: bool = False,
         include_deployed: bool = True,
         include_failed: bool = False,
@@ -167,9 +167,9 @@ class Client:
         include_uninstalled: bool = False,
         include_uninstalling: bool = False,
         max_releases: int = 256,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         sort_by_date: bool = False,
-        sort_reversed: bool = False
+        sort_reversed: bool = False,
     ) -> t.Iterable[Release]:
         """
         Returns an iterable of the deployed releases.
@@ -177,60 +177,53 @@ class Client:
         return (
             Release(
                 self._command,
-                name = release["name"],
-                namespace = release["namespace"],
+                name=release["name"],
+                namespace=release["namespace"],
             )
             for release in await self._command.list(
-                all = all,
-                all_namespaces = all_namespaces,
-                include_deployed = include_deployed,
-                include_failed = include_failed,
-                include_pending = include_pending,
-                include_superseded = include_superseded,
-                include_uninstalled = include_uninstalled,
-                include_uninstalling = include_uninstalling,
-                max_releases = max_releases,
-                namespace = namespace,
-                sort_by_date = sort_by_date,
-                sort_reversed = sort_reversed
+                all=all,
+                all_namespaces=all_namespaces,
+                include_deployed=include_deployed,
+                include_failed=include_failed,
+                include_pending=include_pending,
+                include_superseded=include_superseded,
+                include_uninstalled=include_uninstalled,
+                include_uninstalling=include_uninstalling,
+                max_releases=max_releases,
+                namespace=namespace,
+                sort_by_date=sort_by_date,
+                sort_reversed=sort_reversed,
             )
         )
 
     async def get_current_revision(
-        self,
-        release_name: str,
-        *,
-        namespace: t.Optional[str] = None
+        self, release_name: str, *, namespace: str | None = None
     ) -> ReleaseRevision:
         """
         Returns the current revision of the named release.
         """
         return ReleaseRevision._from_status(
-            await self._command.status(
-                release_name,
-                namespace = namespace
-            ),
-            self._command
+            await self._command.status(release_name, namespace=namespace), self._command
         )
 
     async def install_or_upgrade_release(
         self,
         release_name: str,
         chart: Chart,
-        *values: t.Dict[str, t.Any],
+        *values: dict[str, t.Any],
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
-        description: t.Optional[str] = None,
+        description: str | None = None,
         dry_run: bool = False,
         force: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        timeout: int | str | None = None,
+        wait: bool = False,
     ) -> ReleaseRevision:
         """
         Install or upgrade the named release using the given chart and values and return
@@ -241,31 +234,31 @@ class Client:
                 release_name,
                 chart.ref,
                 mergeconcat(*values) if values else None,
-                atomic = atomic,
-                cleanup_on_fail = cleanup_on_fail,
-                create_namespace = create_namespace,
-                description = description,
-                dry_run = dry_run,
-                force = force,
-                namespace = namespace,
-                no_hooks = no_hooks,
-                repo = chart.repo,
-                reset_values = reset_values,
-                reuse_values = reuse_values,
-                skip_crds = skip_crds,
-                timeout = timeout,
-                version = chart.metadata.version,
-                wait = wait
+                atomic=atomic,
+                cleanup_on_fail=cleanup_on_fail,
+                create_namespace=create_namespace,
+                description=description,
+                dry_run=dry_run,
+                force=force,
+                namespace=namespace,
+                no_hooks=no_hooks,
+                repo=chart.repo,
+                reset_values=reset_values,
+                reuse_values=reuse_values,
+                skip_crds=skip_crds,
+                timeout=timeout,
+                version=chart.metadata.version,
+                wait=wait,
             ),
-            self._command
+            self._command,
         )
 
     async def get_proceedable_revision(
         self,
         release_name: str,
         *,
-        namespace: t.Optional[str] = None,
-        timeout: t.Union[int, str, None] = None
+        namespace: str | None = None,
+        timeout: int | str | None = None,
     ) -> ReleaseRevision:
         """
         Returns a proceedable revision for the named release by rolling back or deleting
@@ -273,33 +266,34 @@ class Client:
         """
         try:
             current_revision = await self.get_current_revision(
-                release_name,
-                namespace = namespace
+                release_name, namespace=namespace
             )
         except ReleaseNotFoundError:
             # This condition is an easy one ;-)
             return None
         else:
             if current_revision.status in {
-                # If the release is stuck in pending-install, there is nothing to rollback to
+                # If the release is stuck in pending-install,
+                # there is nothing to rollback to
                 # Instead, we have to uninstall the release and try again
                 ReleaseRevisionStatus.PENDING_INSTALL,
-                # If the release is stuck in uninstalling, we need to complete the uninstall
+                # If the release is stuck in uninstalling,
+                # we need to complete the uninstall
                 ReleaseRevisionStatus.UNINSTALLING,
             }:
-                await current_revision.release.uninstall(timeout = timeout, wait = True)
+                await current_revision.release.uninstall(timeout=timeout, wait=True)
                 return None
             elif current_revision.status in {
-                # If the release is stuck in pending-upgrade, we need to rollback to the previous
+                # If the release is stuck in pending-upgrade,
+                # we need to rollback to the previous
                 # revision before trying the upgrade again
                 ReleaseRevisionStatus.PENDING_UPGRADE,
-                # For a release stuck in pending-rollback, we need to complete the rollback
+                # For a release stuck in pending-rollback,
+                # we need to complete the rollback
                 ReleaseRevisionStatus.PENDING_ROLLBACK,
             }:
                 return await current_revision.release.rollback(
-                    cleanup_on_fail = True,
-                    timeout = timeout,
-                    wait = True
+                    cleanup_on_fail=True, timeout=timeout, wait=True
                 )
             else:
                 # All other statuses are proceedable
@@ -307,9 +301,9 @@ class Client:
 
     async def should_install_or_upgrade_release(
         self,
-        current_revision: t.Optional[ReleaseRevision],
+        current_revision: ReleaseRevision | None,
         chart: Chart,
-        *values: t.Dict[str, t.Any]
+        *values: dict[str, t.Any],
     ) -> bool:
         """
         Returns True if an install or upgrade is required based on the given revision,
@@ -340,56 +334,52 @@ class Client:
         self,
         release_name: str,
         chart: Chart,
-        *values: t.Dict[str, t.Any],
+        *values: dict[str, t.Any],
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
-        description: t.Optional[str] = None,
+        description: str | None = None,
         force: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        timeout: int | str | None = None,
+        wait: bool = False,
     ) -> ReleaseRevision:
         """
-        Ensures the named release matches the given chart and values and return the current
-        revision.
+        Ensures the named release matches the given chart and values and return the
+        current revision.
 
-        It the release must be rolled back or deleted in order to be proceedable, this method
-        will ensure that happens. It will also only make a new release if the chart and/or
-        values have changed.
+        It the release must be rolled back or deleted in order to be proceedable,
+        this method will ensure that happens. It will also only make a new release
+        if the chart and/or values have changed.
         """
         values = mergeconcat(*values) if values else {}
         current_revision = await self.get_proceedable_revision(
-            release_name,
-            namespace = namespace,
-            timeout = timeout
+            release_name, namespace=namespace, timeout=timeout
         )
         should_install_or_upgrade = await self.should_install_or_upgrade_release(
-            current_revision,
-            chart,
-            values
+            current_revision, chart, values
         )
         if should_install_or_upgrade:
             return await self.install_or_upgrade_release(
                 release_name,
                 chart,
                 values,
-                atomic = atomic,
-                cleanup_on_fail = cleanup_on_fail,
-                create_namespace = create_namespace,
-                description = description,
-                force = force,
-                namespace = namespace,
-                no_hooks = no_hooks,
-                reset_values = reset_values,
-                reuse_values = reuse_values,
-                skip_crds = skip_crds,
-                timeout = timeout,
-                wait = wait
+                atomic=atomic,
+                cleanup_on_fail=cleanup_on_fail,
+                create_namespace=create_namespace,
+                description=description,
+                force=force,
+                namespace=namespace,
+                no_hooks=no_hooks,
+                reset_values=reset_values,
+                reuse_values=reuse_values,
+                skip_crds=skip_crds,
+                timeout=timeout,
+                wait=wait,
             )
         else:
             return current_revision
@@ -400,10 +390,10 @@ class Client:
         *,
         dry_run: bool = False,
         keep_history: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        timeout: int | str | None = None,
+        wait: bool = False,
     ):
         """
         Uninstall the named release.
@@ -411,12 +401,12 @@ class Client:
         try:
             await self._command.uninstall(
                 release_name,
-                dry_run = dry_run,
-                keep_history = keep_history,
-                namespace = namespace,
-                no_hooks = no_hooks,
-                timeout = timeout,
-                wait = wait
+                dry_run=dry_run,
+                keep_history=keep_history,
+                namespace=namespace,
+                no_hooks=no_hooks,
+                timeout=timeout,
+                wait=wait,
             )
         except ReleaseNotFoundError:
             # If the release does not exist, it is deleted :-)

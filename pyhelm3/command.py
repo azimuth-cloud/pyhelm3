@@ -16,15 +16,17 @@ from . import errors
 class SafeLoader(yaml.SafeLoader):
     """
     We use a custom YAML loader that doesn't bork on plain equals '=' signs.
-    
-    It was originally designated with a special meaning, but noone uses it:
+
+    It was originally designated with a special meaning, but no one uses it:
 
         https://github.com/yaml/pyyaml/issues/89
         https://yaml.org/type/value.html
     """
+
     @staticmethod
     def construct_value(loader, node):
         return loader.construct_scalar(node)
+
 
 SafeLoader.add_constructor("tag:yaml.org,2002:value", SafeLoader.construct_value)
 
@@ -125,29 +127,32 @@ annotations:
 
 
 #: Bound type var for forward references
-CommandType = t.TypeVar("CommandType", bound = "Command")
+CommandType = t.TypeVar("CommandType", bound="Command")
 
 
 CHART_NOT_FOUND = re.compile(r"chart \"[^\"]+\" (version \"[^\"]+\" )?not found")
-CONNECTION_ERROR = re.compile(r"(read: operation timed out|connect: network is unreachable)")
+CONNECTION_ERROR = re.compile(
+    r"(read: operation timed out|connect: network is unreachable)"
+)
 
 
 class Command:
     """
     Class presenting an async interface around the Helm CLI.
     """
+
     def __init__(
         self,
         *,
-        default_timeout: t.Union[int, str] = "5m",
+        default_timeout: int | str = "5m",
         executable: str = "helm",
         history_max_revisions: int = 10,
         insecure_skip_tls_verify: bool = False,
-        kubeconfig: t.Optional[pathlib.Path] = None,
-        kubecontext: t.Optional[str] = None,
-        kubeapiserver: t.Optional[str] = None,
-        kubetoken: t.Optional[str] = None,
-        unpack_directory: t.Optional[str] = None
+        kubeconfig: pathlib.Path | None = None,
+        kubecontext: str | None = None,
+        kubeapiserver: str | None = None,
+        kubetoken: str | None = None,
+        unpack_directory: str | None = None,
     ):
         self._logger = logging.getLogger(__name__)
         self._default_timeout = default_timeout
@@ -169,11 +174,11 @@ class Command:
         else:
             return argument
 
-    async def run(self, command: t.List[str], input: t.Optional[bytes] = None) -> bytes:
+    async def run(self, command: list[str], input: bytes | None = None) -> bytes:  # noqa: A002,C901
         """
-        Run the given Helm command with the given input as stdin and 
+        Run the given Helm command with the given input as stdin and
         """
-        command = [self._executable] + command
+        command = [self._executable, *command]
         if self._kubeconfig:
             command.extend(["--kubeconfig", self._kubeconfig])
         if self._kubecontext:
@@ -186,26 +191,25 @@ class Command:
             command.append("--kube-insecure-skip-tls-verify")
         # The command must be made up of str and bytes, so convert anything that isn't
         shell_formatted_command = shlex.join(
-            part if isinstance(part, (str, bytes)) else str(part)
-            for part in command
+            part if isinstance(part, (str, bytes)) else str(part) for part in command
         )
         log_formatted_command = shlex.join(self._log_format(part) for part in command)
         self._logger.info("running command: %s", log_formatted_command)
         proc = await asyncio.create_subprocess_shell(
             shell_formatted_command,
             # Only make stdin a pipe if we have input to feed it
-            stdin = asyncio.subprocess.PIPE if input is not None else None,
-            stdout = asyncio.subprocess.PIPE,
-            stderr = asyncio.subprocess.PIPE
+            stdin=asyncio.subprocess.PIPE if input is not None else None,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
         try:
             stdout, stderr = await proc.communicate(input)
         except asyncio.CancelledError:
             # If the asyncio task is cancelled, terminate the Helm process but let the
-            # process handle the termination and exit
-            # We occassionally see a ProcessLookupError here if the process finished between
-            # us being cancelled and terminating the process, which we ignore as that is our
-            # target state anyway
+            # process handle the termination and exit
+            # We occasionally see a ProcessLookupError here if the process finished
+            # between us being cancelled and terminating the process, which we ignore as
+            # that is our target state anyway
             try:
                 proc.terminate()
                 _ = await proc.communicate()
@@ -223,7 +227,8 @@ class Command:
             if "context canceled" in stderr_str:
                 error_cls = errors.CommandCancelledError
             # Any error referencing etcd is a connection error
-            # This must be before other rules, as it sometimes occurs alonside a not found error
+            # This must be before other rules,
+            # as it sometimes occurs alonside a not found error
             elif "etcdserver" in stderr_str:
                 error_cls = errors.ConnectionError
             elif "release: not found" in stderr_str:
@@ -232,7 +237,10 @@ class Command:
                 error_cls = errors.FailedToRenderChartError
             elif "execution error" in stderr_str:
                 error_cls = errors.FailedToRenderChartError
-            elif "rendered manifests contain a resource that already exists" in stderr_str:
+            elif (
+                "rendered manifests contain a resource that already exists"
+                in stderr_str
+            ):
                 error_cls = errors.ResourceAlreadyExistsError
             elif "is invalid" in stderr_str:
                 error_cls = errors.InvalidResourceError
@@ -250,10 +258,10 @@ class Command:
         other_release_name: str,
         *,
         # The number of lines of context to show around each diff
-        context_lines: t.Optional[int] = None,
-        namespace: t.Optional[str] = None,
+        context_lines: int | None = None,
+        namespace: str | None = None,
         # Indicates whether to show secret values in the diff
-        show_secrets: bool = True
+        show_secrets: bool = True,
     ) -> str:
         """
         Returns the diff between two releases created from the same chart.
@@ -279,13 +287,13 @@ class Command:
         release_name: str,
         revision: int,
         # If not specified, the diff is with latest
-        other_revision: t.Optional[int] = None,
+        other_revision: int | None = None,
         *,
         # The number of lines of context to show around each diff
-        context_lines: t.Optional[int] = None,
-        namespace: t.Optional[str] = None,
+        context_lines: int | None = None,
+        namespace: str | None = None,
         # Indicates whether to show secret values in the diff
-        show_secrets: bool = True
+        show_secrets: bool = True,
     ) -> str:
         """
         Returns the diff between two revisions of the specified release.
@@ -313,13 +321,13 @@ class Command:
         self,
         release_name: str,
         # The revision to simulate rolling back to
-        revision: t.Optional[int] = None,
+        revision: int | None = None,
         *,
         # The number of lines of context to show around each diff
-        context_lines: t.Optional[int] = None,
-        namespace: t.Optional[str] = None,
+        context_lines: int | None = None,
+        namespace: str | None = None,
         # Indicates whether to show secret values in the diff
-        show_secrets: bool = True
+        show_secrets: bool = True,
     ) -> str:
         """
         Returns the diff that would result from rolling back the given release
@@ -344,21 +352,21 @@ class Command:
     async def diff_upgrade(
         self,
         release_name: str,
-        chart_ref: t.Union[pathlib.Path, str],
-        values: t.Optional[t.Dict[str, t.Any]] = None,
+        chart_ref: pathlib.Path | str,
+        values: dict[str, t.Any] | None = None,
         *,
         # The number of lines of context to show around each diff
-        context_lines: t.Optional[int] = None,
+        context_lines: int | None = None,
         devel: bool = False,
         dry_run: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-        repo: t.Optional[str] = None,
+        repo: str | None = None,
         reset_values: bool = False,
         reuse_values: bool = False,
         # Indicates whether to show secret values in the diff
         show_secrets: bool = True,
-        version: t.Optional[str] = None
+        version: str | None = None,
     ) -> str:
         """
         Returns the diff that would result from rolling back the given release
@@ -372,10 +380,12 @@ class Command:
             "--allow-unreleased",
             "--no-color",
             "--normalize-manifests",
-            # Disable OpenAPI validation as we still want the diff to work when CRDs change
+            # Disable OpenAPI validation as we still want the diff to work when CRDs
+            # change
             "--disable-openapi-validation",
             # We pass the values using stdin
-            "--values", "-",
+            "--values",
+            "-",
         ]
         if context_lines is not None:
             command.extend(["--context", context_lines])
@@ -401,7 +411,8 @@ class Command:
 
     async def diff_version(self) -> str:
         """
-        Returns the version of the Helm diff plugin (https://github.com/databus23/helm-diff).
+        Returns the version of the Helm diff plugin
+        (https://github.com/databus23/helm-diff).
         """
         return (await self.run(["diff", "version"])).decode()
 
@@ -409,8 +420,8 @@ class Command:
         self,
         release_name: str,
         *,
-        namespace: t.Optional[str] = None,
-        revision: t.Optional[int] = None
+        namespace: str | None = None,
+        revision: int | None = None,
     ):
         """
         Returns metadata for the chart that was used to deploy the release.
@@ -422,21 +433,22 @@ class Command:
             "all",
             release_name,
             # Use the chart metadata template
-            "--template", CHART_METADATA_TEMPLATE
+            "--template",
+            CHART_METADATA_TEMPLATE,
         ]
         if namespace:
             command.extend(["--namespace", namespace])
         if revision is not None:
             command.extend(["--revision", revision])
-        return yaml.load(await self.run(command), Loader = SafeLoader)
+        return yaml.load(await self.run(command), Loader=SafeLoader)
 
     async def get_hooks(
         self,
         release_name: str,
         *,
-        namespace: t.Optional[str] = None,
-        revision: t.Optional[int] = None
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+        namespace: str | None = None,
+        revision: int | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Returns the hooks for the specified release.
         """
@@ -445,15 +457,15 @@ class Command:
             command.extend(["--revision", revision])
         if namespace:
             command.extend(["--namespace", namespace])
-        return yaml.load_all(await self.run(command), Loader = SafeLoader)
+        return yaml.load_all(await self.run(command), Loader=SafeLoader)
 
     async def get_resources(
         self,
         release_name: str,
         *,
-        namespace: t.Optional[str] = None,
-        revision: t.Optional[int] = None
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+        namespace: str | None = None,
+        revision: int | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Returns the resources for the specified release.
         """
@@ -462,16 +474,16 @@ class Command:
             command.extend(["--revision", revision])
         if namespace:
             command.extend(["--namespace", namespace])
-        return yaml.load_all(await self.run(command), Loader = SafeLoader)
+        return yaml.load_all(await self.run(command), Loader=SafeLoader)
 
     async def get_values(
         self,
         release_name: str,
         *,
         computed: bool = False,
-        namespace: t.Optional[str] = None,
-        revision: t.Optional[int] = None
-     ) -> t.Dict[str, t.Any]:
+        namespace: str | None = None,
+        revision: int | None = None,
+    ) -> dict[str, t.Any]:
         """
         Returns the values for the specified release.
 
@@ -491,8 +503,8 @@ class Command:
         release_name: str,
         *,
         max_revisions: int = 256,
-        namespace: t.Optional[str] = None
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+        namespace: str | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Returns the historical revisions for the specified release.
 
@@ -503,29 +515,29 @@ class Command:
             command.extend(["--namespace", namespace])
         return json.loads(await self.run(command))
 
-    async def install_or_upgrade(
+    async def install_or_upgrade(  # noqa: C901
         self,
         release_name: str,
-        chart_ref: t.Union[pathlib.Path, str],
-        values: t.Optional[t.Dict[str, t.Any]] = None,
+        chart_ref: pathlib.Path | str,
+        values: dict[str, t.Any] | None = None,
         *,
         atomic: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
-        description: t.Optional[str] = None,
+        description: str | None = None,
         devel: bool = False,
         dry_run: bool = False,
         force: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-        repo: t.Optional[str] = None,
+        repo: str | None = None,
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        version: t.Optional[str] = None,
-        wait: bool = False
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+        timeout: int | str | None = None,
+        version: str | None = None,
+        wait: bool = False,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Installs or upgrades the specified release using the given chart and values.
         """
@@ -533,13 +545,17 @@ class Command:
             "upgrade",
             release_name,
             chart_ref,
-            "--history-max", self._history_max_revisions,
+            "--history-max",
+            self._history_max_revisions,
             "--install",
-            "--output", "json",
+            "--output",
+            "json",
             # Use the default timeout unless an override is specified
-            "--timeout", timeout if timeout is not None else self._default_timeout,
+            "--timeout",
+            timeout if timeout is not None else self._default_timeout,
             # We send the values in on stdin
-            "--values", "-",
+            "--values",
+            "-",
         ]
         if atomic:
             command.append("--atomic")
@@ -576,7 +592,7 @@ class Command:
     async def list(
         self,
         *,
-        all: bool = False,
+        all: bool = False,  # noqa: A002
         all_namespaces: bool = False,
         include_deployed: bool = True,
         include_failed: bool = False,
@@ -585,10 +601,10 @@ class Command:
         include_uninstalled: bool = False,
         include_uninstalling: bool = False,
         max_releases: int = 256,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         sort_by_date: bool = False,
-        sort_reversed: bool = False
-    ) -> t.Iterable[t.Dict[str, t.Any]]:
+        sort_reversed: bool = False,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Returns the list of releases that match the given options.
         """
@@ -619,19 +635,20 @@ class Command:
 
     async def pull(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
+        repo: str | None = None,
+        version: str | None = None,
     ) -> pathlib.Path:
         """
         Fetch a chart from a remote location and unpack it locally.
 
-        Returns the path of the directory into which the chart was downloaded and unpacked.
+        Returns the path of the directory into which the chart was downloaded and
+        unpacked.
         """
         # Make a directory to unpack into
-        destination = tempfile.mkdtemp(prefix = "helm.", dir = self._unpack_directory)
+        destination = tempfile.mkdtemp(prefix="helm.", dir=self._unpack_directory)
         command = ["pull", chart_ref, "--destination", destination, "--untar"]
         if devel:
             command.append("--devel")
@@ -642,7 +659,7 @@ class Command:
         await self.run(command)
         return pathlib.Path(destination).resolve()
 
-    async def repo_list(self) -> t.Iterable[t.Dict[str, t.Any]]:
+    async def repo_list(self) -> t.Iterable[dict[str, t.Any]]:
         """
         Lists the available Helm repositories.
         """
@@ -665,7 +682,7 @@ class Command:
 
         Returns the repo list on success.
         """
-        await self.run(["repo", "update", "--fail-on-repo-update-fail"] + list(names))
+        await self.run(["repo", "update", "--fail-on-repo-update-fail", *names])
 
     async def repo_remove(self, name: str):
         """
@@ -682,16 +699,16 @@ class Command:
     async def rollback(
         self,
         release_name: str,
-        revision: t.Optional[int],
+        revision: int | None,
         *,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
         force: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
         recreate_pods: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        timeout: int | str | None = None,
+        wait: bool = False,
     ):
         """
         Rollback the specified release to the specified revision.
@@ -702,11 +719,15 @@ class Command:
         ]
         if revision is not None:
             command.append(revision)
-        command.extend([
-            "--history-max", self._history_max_revisions,
-            # Use the default timeout unless an override is specified
-            "--timeout", timeout if timeout is not None else self._default_timeout,
-        ])
+        command.extend(
+            [
+                "--history-max",
+                self._history_max_revisions,
+                # Use the default timeout unless an override is specified
+                "--timeout",
+                timeout if timeout is not None else self._default_timeout,
+            ]
+        )
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
         if dry_run:
@@ -725,14 +746,15 @@ class Command:
 
     async def search(
         self,
-        search_keyword: t.Optional[str] = None,
+        search_keyword: str | None = None,
         *,
         all_versions: bool = False,
         devel: bool = False,
-        version_constraints: t.Optional[str] = None
-    ) -> t.Iterable[t.Dict[str, t.Any]]:
+        version_constraints: str | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
-        Search the available Helm repositories for charts matching the specified constraints.
+        Search the available Helm repositories for charts matching the specified
+        constraints.
         """
         command = ["search", "repo", "--output", "json"]
         if search_keyword:
@@ -747,12 +769,12 @@ class Command:
 
     async def show_chart(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
-    ) -> t.Dict[str, t.Any]:
+        repo: str | None = None,
+        version: str | None = None,
+    ) -> dict[str, t.Any]:
         """
         Returns the contents of Chart.yaml for the specified chart.
         """
@@ -763,21 +785,21 @@ class Command:
             command.extend(["--repo", repo])
         if version:
             command.extend(["--version", version])
-        return yaml.load(await self.run(command), Loader = SafeLoader)
+        return yaml.load(await self.run(command), Loader=SafeLoader)
 
     async def show_crds(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
-    ) -> t.Iterable[t.Dict[str, t.Any]]:
+        repo: str | None = None,
+        version: str | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Returns the CRDs for the specified chart.
         """
         # Until https://github.com/helm/helm/issues/11261 is fixed, we must manually
-        # unpack the chart and parse the files in the ./crds directory ourselves
+        # unpack the chart and parse the files in the ./crds directory ourselves
         # This is what the implementation should be
         # command = ["show", "crds", chart_ref]
         # if devel:
@@ -792,18 +814,17 @@ class Command:
         ephemeral_path = None
         try:
             if repo:
-                # If a repo is given, assume that the chart ref is a chart name in that repo
+                # If a repo is given, assume that the chart ref is a chart name in that
+                # repo
                 ephemeral_path = await self.pull(
-                    chart_ref,
-                    devel = devel,
-                    repo = repo,
-                    version = version
+                    chart_ref, devel=devel, repo=repo, version=version
                 )
                 chart_directory = next(ephemeral_path.glob("**/Chart.yaml")).parent
             else:
-                # If not, we have either a path (directory or archive) or a URL to a chart
+                # If not, we have either a path (directory or archive) or a URL to a
+                # chart
                 try:
-                    chart_path = pathlib.Path(chart_ref).resolve(strict = True)
+                    chart_path = pathlib.Path(chart_ref).resolve(strict=True)
                 except (TypeError, ValueError, FileNotFoundError):
                     # Assume we have a URL that needs pulling
                     ephemeral_path = await self.pull(chart_ref)
@@ -813,10 +834,14 @@ class Command:
                         # Just make sure that the directory is a chart
                         chart_directory = next(chart_path.glob("**/Chart.yaml")).parent
                     else:
-                        raise RuntimeError("local archive files are not currently supported")
+                        raise RuntimeError(
+                            "local archive files are not currently supported"
+                        )
+
             def yaml_load_all(file):
                 with file.open() as fh:
-                    yield from yaml.load_all(fh, Loader = SafeLoader)
+                    yield from yaml.load_all(fh, Loader=SafeLoader)
+
             return [
                 crd
                 for crd_file in chart_directory.glob("crds/**/*.yaml")
@@ -828,11 +853,11 @@ class Command:
 
     async def show_readme(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
+        repo: str | None = None,
+        version: str | None = None,
     ) -> str:
         """
         Returns the README for the specified chart.
@@ -848,12 +873,12 @@ class Command:
 
     async def show_values(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None
-    ) -> t.Dict[str, t.Any]:
+        repo: str | None = None,
+        version: str | None = None,
+    ) -> dict[str, t.Any]:
         """
         Returns the default values for the specified chart.
         """
@@ -864,14 +889,14 @@ class Command:
             command.extend(["--repo", repo])
         if version:
             command.extend(["--version", version])
-        return yaml.load(await self.run(command), Loader = SafeLoader)
+        return yaml.load(await self.run(command), Loader=SafeLoader)
 
     async def status(
         self,
         release_name: str,
         *,
-        namespace: t.Optional[str] = None,
-        revision: t.Optional[int] = None,
+        namespace: str | None = None,
+        revision: int | None = None,
     ):
         """
         Get the status of the specified release.
@@ -886,17 +911,17 @@ class Command:
     async def template(
         self,
         release_name: str,
-        chart_ref: t.Union[pathlib.Path, str],
-        values: t.Optional[t.Dict[str, t.Any]] = None,
+        chart_ref: pathlib.Path | str,
+        values: dict[str, t.Any] | None = None,
         *,
         devel: bool = False,
         include_crds: bool = False,
         is_upgrade: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-        repo: t.Optional[str] = None,
-        version: t.Optional[str] = None,
-     ) -> t.Iterable[t.Dict[str, t.Any]]:
+        repo: str | None = None,
+        version: str | None = None,
+    ) -> t.Iterable[dict[str, t.Any]]:
         """
         Renders the chart templates and returns the resources.
         """
@@ -906,7 +931,8 @@ class Command:
             chart_ref,
             "--include-crds" if include_crds else "--skip-crds",
             # We send the values in on stdin
-            "--values", "-",
+            "--values",
+            "-",
         ]
         if devel:
             command.append("--devel")
@@ -922,7 +948,7 @@ class Command:
             command.extend(["--version", version])
         return yaml.load_all(
             await self.run(command, json.dumps(values or {}).encode()),
-            Loader = SafeLoader
+            Loader=SafeLoader,
         )
 
     async def uninstall(
@@ -931,10 +957,10 @@ class Command:
         *,
         dry_run: bool = False,
         keep_history: bool = False,
-        namespace: t.Optional[str] = None,
+        namespace: str | None = None,
         no_hooks: bool = False,
-        timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        timeout: int | str | None = None,
+        wait: bool = False,
     ):
         """
         Uninstall the specified release.
@@ -943,7 +969,8 @@ class Command:
             "uninstall",
             release_name,
             # Use the default timeout unless an override is specified
-            "--timeout", timeout if timeout is not None else self._default_timeout,
+            "--timeout",
+            timeout if timeout is not None else self._default_timeout,
         ]
         if dry_run:
             command.append("--dry-run")
