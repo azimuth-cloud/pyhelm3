@@ -43,7 +43,7 @@ NonEmptyString = constr(min_length = 1)
 
 
 #: Type for a name (chart or release)
-Name = constr(pattern = r"^[a-z0-9-]+$")
+Name = constr(pattern = r"^[a-z0-9_-]+$")
 
 
 #: Type for a SemVer version
@@ -273,7 +273,7 @@ class Release(ModelWithCommand):
     )
     namespace: Name = Field(
         ...,
-        description = "The namespace of the release." 
+        description = "The namespace of the release."
     )
 
     async def current_revision(self) -> ReleaseRevisionType:
@@ -642,7 +642,7 @@ class ReleaseRevision(ModelWithCommand):
             )
             self.chart_metadata_ = ChartMetadata(**metadata)
         return self.chart_metadata_
-    
+
     async def hooks(self) -> t.Iterable[Hook]:
         """
         Returns the hooks that were executed as part of this revision.
