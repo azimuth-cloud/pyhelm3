@@ -16,7 +16,7 @@ from . import errors
 class SafeLoader(yaml.SafeLoader):
     """
     We use a custom YAML loader that doesn't bork on plain equals '=' signs.
-    
+
     It was originally designated with a special meaning, but noone uses it:
 
         https://github.com/yaml/pyyaml/issues/89
@@ -171,7 +171,7 @@ class Command:
 
     async def run(self, command: t.List[str], input: t.Optional[bytes] = None) -> bytes:
         """
-        Run the given Helm command with the given input as stdin and 
+        Run the given Helm command with the given input as stdin and
         """
         command = [self._executable] + command
         if self._kubeconfig:
@@ -528,7 +528,8 @@ class Command:
         skip_crds: bool = False,
         timeout: t.Union[int, str, None] = None,
         version: t.Optional[str] = None,
-        wait: bool = False
+        wait: bool = False,
+        disable_validation: bool = False,
      ) -> t.Iterable[t.Dict[str, t.Any]]:
         """
         Installs or upgrades the specified release using the given chart and values.
@@ -577,6 +578,8 @@ class Command:
             command.extend(["--version", version])
         if wait:
             command.extend(["--wait", "--wait-for-jobs"])
+        if disable_validation:
+            command.extend("--disable-openapi-validation")
         return json.loads(await self.run(command, json.dumps(values or {}).encode()))
 
     async def list(
