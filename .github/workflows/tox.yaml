@@ -1,12 +1,21 @@
 name: Tox unit tests
 
 on:
-  workflow_call:
-    inputs:
-      ref:
-        type: string
-        description: The ref to build.
-        required: true
+  # We use pull_request_target so that dependabot-created workflows can run
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+      - ready_for_review
+      - reopened
+    branches:
+      - main
+
+# Use the head ref for workflow concurrency, with cancellation
+# This should mean that any previous workflows for a PR get cancelled when a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
