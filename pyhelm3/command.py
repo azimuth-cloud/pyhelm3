@@ -17,7 +17,11 @@ class SafeLoader(yaml.SafeLoader):
     """
     We use a custom YAML loader that doesn't bork on plain equals '=' signs.
 
+<<<<<<< feature/add-tox
     It was originally designated with a special meaning, but no one uses it:
+=======
+    It was originally designated with a special meaning, but noone uses it:
+>>>>>>> main
 
         https://github.com/yaml/pyyaml/issues/89
         https://yaml.org/type/value.html
@@ -358,6 +362,7 @@ class Command:
         # The number of lines of context to show around each diff
         context_lines: int | None = None,
         devel: bool = False,
+        debug: bool = False,
         dry_run: bool = False,
         namespace: str | None = None,
         no_hooks: bool = False,
@@ -391,6 +396,8 @@ class Command:
             command.extend(["--context", context_lines])
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if namespace:
@@ -526,6 +533,7 @@ class Command:
         create_namespace: bool = True,
         description: str | None = None,
         devel: bool = False,
+        debug: bool = False,
         dry_run: bool = False,
         force: bool = False,
         namespace: str | None = None,
@@ -534,10 +542,18 @@ class Command:
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
+<<<<<<< feature/add-tox
         timeout: int | str | None = None,
         version: str | None = None,
         wait: bool = False,
     ) -> t.Iterable[dict[str, t.Any]]:
+=======
+        timeout: t.Union[int, str, None] = None,
+        version: t.Optional[str] = None,
+        wait: bool = False,
+        disable_validation: bool = False,
+     ) -> t.Iterable[t.Dict[str, t.Any]]:
+>>>>>>> main
         """
         Installs or upgrades the specified release using the given chart and values.
         """
@@ -567,6 +583,8 @@ class Command:
             command.extend(["--description", description])
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if force:
@@ -587,6 +605,8 @@ class Command:
             command.extend(["--version", version])
         if wait:
             command.extend(["--wait", "--wait-for-jobs"])
+        if disable_validation:
+            command.extend("--disable-openapi-validation")
         return json.loads(await self.run(command, json.dumps(values or {}).encode()))
 
     async def list(
@@ -638,8 +658,14 @@ class Command:
         chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
+<<<<<<< feature/add-tox
         repo: str | None = None,
         version: str | None = None,
+=======
+        debug: bool = False,
+        repo: t.Optional[str] = None,
+        version: t.Optional[str] = None
+>>>>>>> main
     ) -> pathlib.Path:
         """
         Fetch a chart from a remote location and unpack it locally.
@@ -652,6 +678,8 @@ class Command:
         command = ["pull", chart_ref, "--destination", destination, "--untar"]
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -703,6 +731,7 @@ class Command:
         *,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
+        debug: bool = False,
         force: bool = False,
         namespace: str | None = None,
         no_hooks: bool = False,
@@ -730,6 +759,8 @@ class Command:
         )
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if force:
@@ -750,8 +781,14 @@ class Command:
         *,
         all_versions: bool = False,
         devel: bool = False,
+<<<<<<< feature/add-tox
         version_constraints: str | None = None,
     ) -> t.Iterable[dict[str, t.Any]]:
+=======
+        debug: bool = False,
+        version_constraints: t.Optional[str] = None
+    ) -> t.Iterable[t.Dict[str, t.Any]]:
+>>>>>>> main
         """
         Search the available Helm repositories for charts matching the specified
         constraints.
@@ -763,6 +800,8 @@ class Command:
             command.append("--versions")
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if version_constraints:
             command.extend(["--version", version_constraints])
         return json.loads(await self.run(command))
@@ -772,15 +811,24 @@ class Command:
         chart_ref: pathlib.Path | str,
         *,
         devel: bool = False,
+<<<<<<< feature/add-tox
         repo: str | None = None,
         version: str | None = None,
     ) -> dict[str, t.Any]:
+=======
+        debug: bool = False,
+        repo: t.Optional[str] = None,
+        version: t.Optional[str] = None
+    ) -> t.Dict[str, t.Any]:
+>>>>>>> main
         """
         Returns the contents of Chart.yaml for the specified chart.
         """
         command = ["show", "chart", chart_ref]
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -915,6 +963,7 @@ class Command:
         values: dict[str, t.Any] | None = None,
         *,
         devel: bool = False,
+        debug: bool = False,
         include_crds: bool = False,
         is_upgrade: bool = False,
         namespace: str | None = None,
@@ -936,6 +985,8 @@ class Command:
         ]
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if is_upgrade:
             command.append("--is-upgrade")
         if namespace:
@@ -956,6 +1007,7 @@ class Command:
         release_name: str,
         *,
         dry_run: bool = False,
+        debug: bool = False,
         keep_history: bool = False,
         namespace: str | None = None,
         no_hooks: bool = False,
@@ -974,6 +1026,8 @@ class Command:
         ]
         if dry_run:
             command.append("--dry-run")
+        if debug:
+            command.append("--debug")
         if keep_history:
             command.append("--keep-history")
         if namespace:

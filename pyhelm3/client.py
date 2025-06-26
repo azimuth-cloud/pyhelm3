@@ -224,6 +224,7 @@ class Client:
         skip_crds: bool = False,
         timeout: int | str | None = None,
         wait: bool = False,
+        disable_validation: bool = False,
     ) -> ReleaseRevision:
         """
         Install or upgrade the named release using the given chart and values and return
@@ -249,6 +250,7 @@ class Client:
                 timeout=timeout,
                 version=chart.metadata.version,
                 wait=wait,
+                disable_validation=disable_validation,
             ),
             self._command,
         )
