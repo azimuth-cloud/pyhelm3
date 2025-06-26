@@ -2,6 +2,7 @@ class Error(Exception):
     """
     Raised when an error occurs with a Helm command.
     """
+
     def __init__(self, returncode: int, stdout: bytes, stderr: bytes):
         self.returncode = returncode
         self.stdout = stdout
@@ -9,7 +10,7 @@ class Error(Exception):
         super().__init__(stderr.decode())
 
 
-class ConnectionError(Error):
+class ConnectionError(Error):  # noqa: A001
     """
     Raised when there is a problem connecting to the Kubernetes API.
     """
