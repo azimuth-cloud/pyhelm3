@@ -45,6 +45,9 @@ NonEmptyString = constr(min_length = 1)
 #: Type for a name (chart or release)
 Name = constr(pattern = r"^[a-z0-9-]+$")
 
+#: Type for a dependency name
+DependencyNameOrAlias = constr(pattern = r"^[a-z0-9_-]+$")
+
 
 #: Type for a SemVer version
 SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
@@ -71,9 +74,9 @@ class ChartDependency(BaseModel):
     """
     Model for a chart dependency.
     """
-    name: Name = Field(
+    name: DependencyNameOrAlias = Field(
         ...,
-        description = "The name of the chart."
+        description = "The name of the chart (or alias, in case of an already-installed dependency)."
     )
     version: NonEmptyString = Field(
         ...,
@@ -273,7 +276,7 @@ class Release(ModelWithCommand):
     )
     namespace: Name = Field(
         ...,
-        description = "The namespace of the release." 
+        description = "The namespace of the release."
     )
 
     async def current_revision(self) -> ReleaseRevisionType:
@@ -642,7 +645,7 @@ class ReleaseRevision(ModelWithCommand):
             )
             self.chart_metadata_ = ChartMetadata(**metadata)
         return self.chart_metadata_
-    
+
     async def hooks(self) -> t.Iterable[Hook]:
         """
         Returns the hooks that were executed as part of this revision.
