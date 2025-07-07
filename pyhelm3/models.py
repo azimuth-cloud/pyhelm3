@@ -43,7 +43,10 @@ NonEmptyString = constr(min_length = 1)
 
 
 #: Type for a name (chart or release)
-Name = constr(pattern = r"^[a-z0-9_-]+$")
+Name = constr(pattern = r"^[a-z0-9-]+$")
+
+#: Type for a dependency name
+DependencyNameOrAlias = constr(pattern = r"^[a-z0-9_-]+$")
 
 
 #: Type for a SemVer version
@@ -71,9 +74,9 @@ class ChartDependency(BaseModel):
     """
     Model for a chart dependency.
     """
-    name: Name = Field(
+    name: DependencyNameOrAlias = Field(
         ...,
-        description = "The name of the chart."
+        description = "The name of the chart (or alias, in case of an already-installed dependency)."
     )
     version: NonEmptyString = Field(
         ...,
