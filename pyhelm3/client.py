@@ -54,6 +54,8 @@ class Client:
         insecure_skip_tls_verify: bool = False,
         kubeconfig: t.Optional[pathlib.Path] = None,
         kubecontext: t.Optional[str] = None,
+        kubeapiserver: t.Optional[str] = None,
+        kubetoken: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None
     ):
         self._command = command or Command(
@@ -63,6 +65,8 @@ class Client:
             insecure_skip_tls_verify = insecure_skip_tls_verify,
             kubeconfig = kubeconfig,
             kubecontext = kubecontext,
+            kubeapiserver = kubeapiserver,
+            kubetoken = kubetoken,
             unpack_directory = unpack_directory
         )
 
@@ -251,7 +255,8 @@ class Client:
         reuse_values: bool = False,
         skip_crds: bool = False,
         timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        wait: bool = False,
+        disable_validation: bool = False,
     ) -> ReleaseRevision:
         """
         Install or upgrade the named release using the given chart and values and return
@@ -276,7 +281,8 @@ class Client:
                 skip_crds = skip_crds,
                 timeout = timeout,
                 version = chart.metadata.version,
-                wait = wait
+                wait = wait,
+                disable_validation = disable_validation,
             ),
             self._command
         )

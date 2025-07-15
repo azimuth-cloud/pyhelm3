@@ -16,7 +16,7 @@ from . import errors
 class SafeLoader(yaml.SafeLoader):
     """
     We use a custom YAML loader that doesn't bork on plain equals '=' signs.
-    
+
     It was originally designated with a special meaning, but noone uses it:
 
         https://github.com/yaml/pyyaml/issues/89
@@ -145,6 +145,8 @@ class Command:
         insecure_skip_tls_verify: bool = False,
         kubeconfig: t.Optional[pathlib.Path] = None,
         kubecontext: t.Optional[str] = None,
+        kubeapiserver: t.Optional[str] = None,
+        kubetoken: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None
     ):
         self._logger = logging.getLogger(__name__)
@@ -154,6 +156,8 @@ class Command:
         self._insecure_skip_tls_verify = insecure_skip_tls_verify
         self._kubeconfig = kubeconfig
         self._kubecontext = kubecontext
+        self._kubeapiserver = kubeapiserver
+        self._kubetoken = kubetoken
         self._unpack_directory = unpack_directory
 
     def _log_format(self, argument):
@@ -167,13 +171,19 @@ class Command:
 
     async def run(self, command: t.List[str], input: t.Optional[bytes] = None) -> bytes:
         """
-        Run the given Helm command with the given input as stdin and 
+        Run the given Helm command with the given input as stdin and
         """
         command = [self._executable] + command
         if self._kubeconfig:
             command.extend(["--kubeconfig", self._kubeconfig])
         if self._kubecontext:
             command.extend(["--kube-context", self._kubecontext])
+        if self._kubeapiserver:
+            command.extend(["--kube-apiserver", self._kubeapiserver])
+        if self._kubetoken:
+            command.extend(["--kube-token", self._kubetoken])
+        if self._insecure_skip_tls_verify:
+            command.append("--kube-insecure-skip-tls-verify")
         # The command must be made up of str and bytes, so convert anything that isn't
         shell_formatted_command = shlex.join(
             part if isinstance(part, (str, bytes)) else str(part)
@@ -340,6 +350,7 @@ class Command:
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         devel: bool = False,
+        debug: bool = False,
         dry_run: bool = False,
         namespace: t.Optional[str] = None,
         no_hooks: bool = False,
@@ -371,6 +382,8 @@ class Command:
             command.extend(["--context", context_lines])
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if namespace:
@@ -504,6 +517,7 @@ class Command:
         create_namespace: bool = True,
         description: t.Optional[str] = None,
         devel: bool = False,
+        debug: bool = False,
         dry_run: bool = False,
         force: bool = False,
         namespace: t.Optional[str] = None,
@@ -514,7 +528,8 @@ class Command:
         skip_crds: bool = False,
         timeout: t.Union[int, str, None] = None,
         version: t.Optional[str] = None,
-        wait: bool = False
+        wait: bool = False,
+        disable_validation: bool = False,
      ) -> t.Iterable[t.Dict[str, t.Any]]:
         """
         Installs or upgrades the specified release using the given chart and values.
@@ -541,12 +556,12 @@ class Command:
             command.extend(["--description", description])
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if force:
             command.append("--force")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if namespace:
             command.extend(["--namespace", namespace])
         if no_hooks:
@@ -563,6 +578,8 @@ class Command:
             command.extend(["--version", version])
         if wait:
             command.extend(["--wait", "--wait-for-jobs"])
+        if disable_validation:
+            command.extend("--disable-openapi-validation")
         return json.loads(await self.run(command, json.dumps(values or {}).encode()))
 
     async def list(
@@ -614,6 +631,7 @@ class Command:
         chart_ref: t.Union[pathlib.Path, str],
         *,
         devel: bool = False,
+        debug: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
     ) -> pathlib.Path:
@@ -627,8 +645,8 @@ class Command:
         command = ["pull", chart_ref, "--destination", destination, "--untar"]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
+        if debug:
+            command.append("--debug")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -649,8 +667,6 @@ class Command:
         Returns the new repo list on success.
         """
         command = ["repo", "add", name, url, "--force-update"]
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         await self.run(command)
 
     async def repo_update(self, *names: str):
@@ -682,6 +698,7 @@ class Command:
         *,
         cleanup_on_fail: bool = False,
         dry_run: bool = False,
+        debug: bool = False,
         force: bool = False,
         namespace: t.Optional[str] = None,
         no_hooks: bool = False,
@@ -705,6 +722,8 @@ class Command:
         ])
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
+        if debug:
+            command.append("--debug")
         if dry_run:
             command.append("--dry-run")
         if force:
@@ -725,6 +744,7 @@ class Command:
         *,
         all_versions: bool = False,
         devel: bool = False,
+        debug: bool = False,
         version_constraints: t.Optional[str] = None
     ) -> t.Iterable[t.Dict[str, t.Any]]:
         """
@@ -737,6 +757,8 @@ class Command:
             command.append("--versions")
         if devel:
             command.append("--devel")
+        if debug:
+            command.append("--debug")
         if version_constraints:
             command.extend(["--version", version_constraints])
         return json.loads(await self.run(command))
@@ -746,6 +768,7 @@ class Command:
         chart_ref: t.Union[pathlib.Path, str],
         *,
         devel: bool = False,
+        debug: bool = False,
         repo: t.Optional[str] = None,
         version: t.Optional[str] = None
     ) -> t.Dict[str, t.Any]:
@@ -755,8 +778,8 @@ class Command:
         command = ["show", "chart", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
+        if debug:
+            command.append("--debug")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -780,8 +803,6 @@ class Command:
         # command = ["show", "crds", chart_ref]
         # if devel:
         #     command.append("--devel")
-        # if self._insecure_skip_tls_verify:
-        #     command.append("--insecure-skip-tls-verify")
         # if repo:
         #     command.extend(["--repo", repo])
         # if version:
@@ -840,8 +861,6 @@ class Command:
         command = ["show", "readme", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -862,8 +881,6 @@ class Command:
         command = ["show", "values", chart_ref]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
         if repo:
             command.extend(["--repo", repo])
         if version:
@@ -894,6 +911,7 @@ class Command:
         values: t.Optional[t.Dict[str, t.Any]] = None,
         *,
         devel: bool = False,
+        debug: bool = False,
         include_crds: bool = False,
         is_upgrade: bool = False,
         namespace: t.Optional[str] = None,
@@ -914,8 +932,8 @@ class Command:
         ]
         if devel:
             command.append("--devel")
-        if self._insecure_skip_tls_verify:
-            command.append("--insecure-skip-tls-verify")
+        if debug:
+            command.append("--debug")
         if is_upgrade:
             command.append("--is-upgrade")
         if namespace:
@@ -936,6 +954,7 @@ class Command:
         release_name: str,
         *,
         dry_run: bool = False,
+        debug: bool = False,
         keep_history: bool = False,
         namespace: t.Optional[str] = None,
         no_hooks: bool = False,
@@ -953,6 +972,8 @@ class Command:
         ]
         if dry_run:
             command.append("--dry-run")
+        if debug:
+            command.append("--debug")
         if keep_history:
             command.append("--keep-history")
         if namespace:

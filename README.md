@@ -4,10 +4,10 @@ Python library for managing Helm releases using Helm 3 (i.e. Tiller-less Helm).
 
 ## Installation
 
-`pyhelm3` can be installed directly from GitHub using `pip`:
+`pyhelm3` can be installed from PyPI:
 
 ```sh
-pip install git+https://github.com/stackhpc/pyhelm3.git
+pip install pyhelm3
 ```
 
 ## Usage
