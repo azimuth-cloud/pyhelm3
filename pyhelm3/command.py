@@ -547,10 +547,12 @@ class Command:
             # We send the values in on stdin
             "--values", "-",
         ]
-        if atomic:
-            command.append("--atomic")
-        if rollback_on_failure:
-            command.append("--rollback-on-failure")
+        if atomic or rollback_on_failure:
+            helm_binary_version = await self.version()
+            if helm_binary_version.startswith("v4"):
+                command.append("--rollback-on-failure")
+            else:
+                command.append("--atomic")
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
         if create_namespace:
