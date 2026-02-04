@@ -513,6 +513,7 @@ class Command:
         values: t.Optional[t.Dict[str, t.Any]] = None,
         *,
         atomic: bool = False,
+        rollback_on_failure: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
         description: t.Optional[str] = None,
@@ -548,6 +549,8 @@ class Command:
         ]
         if atomic:
             command.append("--atomic")
+        if rollback_on_failure:
+            command.append("--rollback-on-failure")
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
         if create_namespace:
