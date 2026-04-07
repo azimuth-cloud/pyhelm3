@@ -43,7 +43,7 @@ NonEmptyString = constr(min_length = 1)
 
 
 #: Type for a name (chart or release)
-Name = constr(pattern = r"^[a-z0-9-]+$")
+Name = constr(pattern = r"^[a-zA-Z0-9-]+$")
 
 
 #: Type for a SemVer version
@@ -194,6 +194,31 @@ class ChartMetadata(BaseModel):
         description = "Annotations for the chart."
     )
 
+
+class ChartVersion(ModelWithCommand):
+    """
+    Model for chart version, from search results
+    """
+    name: NonEmptyString = Field(
+        ...,
+        description = "The full name of the chart."
+    )
+    version: SemVerVersion = Field(
+        ...,
+        description = "The version of the chart."
+    )
+    description: str = Field(
+        None,
+        description = "A single-sentence description of the chart."
+    )
+   
+    app_version: NonEmptyString = Field(
+        None,
+        alias = "appVersion",
+        description = (
+            "The version of the app that this chart deploys. "
+        )
+    )
 
 class Chart(ModelWithCommand):
     """
