@@ -5,9 +5,11 @@ import pathlib
 import re
 import shlex
 import shutil
+import subprocess
 import tempfile
 import typing as t
 
+import semver
 import yaml
 
 from . import errors
@@ -530,6 +532,7 @@ class Command:
         values: t.Optional[t.Dict[str, t.Any]] = None,
         *,
         atomic: bool = False,
+        atomic_arg: str = "--rollback-on-failure",
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
         description: t.Optional[str] = None,
@@ -568,7 +571,7 @@ class Command:
             "-",
         ]
         if atomic:
-            command.append("--atomic")
+            command.append(atomic_arg)
         if cleanup_on_fail:
             command.append("--cleanup-on-fail")
         if create_namespace:
@@ -1032,6 +1035,11 @@ class Command:
             "--template",
             "{{ .Version }}",
         ]
-        proc = subprocess.run(command, capture_output=True, check=True)
+        shell_formatted_command = shlex.join(
+            part if isinstance(part, (str, bytes)) else str(part) for part in command
+        )
+        proc = subprocess.run(
+            shell_formatted_command, capture_output=True, check=True, shell=True
+        )
         version_str = proc.stdout.decode().removeprefix("v")
         return semver.parse_version_info(version_str)

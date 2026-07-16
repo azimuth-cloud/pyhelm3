@@ -3,7 +3,9 @@ import functools
 import pathlib
 import shutil
 import typing as t
+from warnings import warn
 
+import semver
 import yaml
 
 from .command import Command, SafeLoader
@@ -73,6 +75,7 @@ class Client:
             kubetoken=kubetoken,
             unpack_directory=unpack_directory,
         )
+        self.version = self._command.client_version()
 
     async def get_chart(
         self,
@@ -173,6 +176,13 @@ class Client:
         """
         Returns an iterable of the deployed releases.
         """
+        if self.version >= semver.VersionInfo.parse("4.0.0") and all:
+            warn("helm list: Argument --all is deprecated in helm v4, dropping it")
+            # In helm v3 --all is additive with any other flags,
+            # in v4 any flags take precedence and disable --all
+            all = include_deployed = include_failed = include_pending = (
+                include_superseded
+            ) = include_uninstalled = include_uninstalling = False
         return (
             Release(
                 self._command,
@@ -212,6 +222,7 @@ class Client:
         chart: Chart,
         *values: t.Dict[str, t.Any],
         atomic: bool = False,
+        rollback_on_failure: bool = False,
         cleanup_on_fail: bool = False,
         create_namespace: bool = True,
         description: t.Optional[str] = None,
@@ -230,12 +241,29 @@ class Client:
         Install or upgrade the named release using the given chart and values and return
         the new revision.
         """
+        if self.version >= semver.VersionInfo.parse("4.0.0") and atomic:
+            warn(
+                "helm install|upgrade: Argument --atomic is deprecated in helm v4, "
+                "using --rollback-on-failure instead"
+            )
+        if self.version < semver.VersionInfo.parse("4.0.0") and rollback_on_failure:
+            warn(
+                "helm install|upgrade: Argument --rollback-on-failure is undefined "
+                "in helm v3, using --atomic instead"
+            )
+        atomic = atomic or rollback_on_failure
+        atomic_arg = (
+            "--atomic"
+            if self.version < semver.VersionInfo.parse("4.0.0")
+            else "--rollback-on-failure"
+        )
         return ReleaseRevision._from_status(
             await self._command.install_or_upgrade(
                 release_name,
                 chart.ref,
                 mergeconcat(*values) if values else None,
                 atomic=atomic,
+                atomic_arg=atomic_arg,
                 cleanup_on_fail=cleanup_on_fail,
                 create_namespace=create_namespace,
                 description=description,
