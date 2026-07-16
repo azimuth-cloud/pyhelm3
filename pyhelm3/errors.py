@@ -2,6 +2,7 @@ class Error(Exception):
     """
     Raised when an error occurs with a Helm command.
     """
+
     def __init__(self, returncode: int, stdout: bytes, stderr: bytes):
         self.returncode = returncode
         self.stdout = stdout
