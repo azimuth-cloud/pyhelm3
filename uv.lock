@@ -89,6 +89,35 @@ wheels = [
 ]
 
 [[package]]
+name = "hatch-vcs"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "hatchling" },
+    { name = "setuptools-scm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6b/b0/4cc743d38adbee9d57d786fa496ed1daadb17e48589b6da8fa55717a0746/hatch_vcs-0.5.0.tar.gz", hash = "sha256:0395fa126940340215090c344a2bf4e2a77bcbe7daab16f41b37b98c95809ff9", size = 11424, upload-time = "2025-05-27T05:16:04.49Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/48/1f85cee4b7b4f40b9b814b1febbc661bda6ced9649e410a0b74f6e415dd0/hatch_vcs-0.5.0-py3-none-any.whl", hash = "sha256:b49677dbdc597460cc22d01b27ab3696f5e16a21ecf2700fb01bc28e1f2a04a7", size = 8507, upload-time = "2025-05-27T05:16:03.184Z" },
+]
+
+[[package]]
+name = "hatchling"
+version = "1.31.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pathspec" },
+    { name = "pluggy" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "trove-classifiers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/e2/dfa73fe78f773018dcaebc6d09b819bc10d328ff5a6b4a66efa1e3d71f52/hatchling-1.31.0.tar.gz", hash = "sha256:6b48ad4068a482ed7239b3a8215bc55b47aad3345d58dfc94e553c5d2d46211b", size = 57208, upload-time = "2026-07-08T01:48:32.237Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/64/e2/2c0af0a52d16be74a4f194564fcdc417521ed863e9b65e4bc9052dacba6f/hatchling-1.31.0-py3-none-any.whl", hash = "sha256:aac80bec8b6fe35e8480f1c335be8910fa210a0e6f735a139be205dadcacb544", size = 77747, upload-time = "2026-07-08T01:48:31.024Z" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -284,7 +313,6 @@ wheels = [
 
 [[package]]
 name = "pyhelm3"
-version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -295,6 +323,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "black" },
+    { name = "hatch-vcs" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "ruff" },
@@ -310,6 +339,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=26.5.1,<26.6" },
+    { name = "hatch-vcs", specifier = ">=0.5.0" },
     { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "pytest-asyncio", specifier = ">=0.25.3,<0.26" },
     { name = "ruff", specifier = ">=0.15.22,<0.16" },
@@ -483,6 +513,31 @@ wheels = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "83.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/26/f5d29e25ffdb535afef2d35cdb55b325298f96debd670da4c325e08d70f4/setuptools-83.0.0.tar.gz", hash = "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef", size = 1154254, upload-time = "2026-07-04T15:31:22.699Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/40/e1e72872c6354b306daef1703549e8e83b4d43cfea356311bf722a043752/setuptools-83.0.0-py3-none-any.whl", hash = "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3", size = 1008090, upload-time = "2026-07-04T15:31:20.885Z" },
+]
+
+[[package]]
+name = "setuptools-scm"
+version = "10.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "setuptools" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "vcs-versioning" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/61/fb/6b22ba201305ec33fa68c1419e984abe1aaee1b236a5e1186cc805738e95/setuptools_scm-10.2.0.tar.gz", hash = "sha256:ec8ea1738b92e42146a46e29a0e9de9ad462744c63cf9778677b95dfd605adde", size = 67319, upload-time = "2026-06-25T05:27:10.243Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/b4/21180f6fbbf7ed2043bc353608c7b9cc6f7b3d342ad8c287a097e5ca8477/setuptools_scm-10.2.0-py3-none-any.whl", hash = "sha256:6cc5ac7da8e54d74e43503be2fa023eb7a1ca820d5c318e6ae20efc48110d6c7", size = 27741, upload-time = "2026-06-25T05:27:09.037Z" },
+]
+
+[[package]]
 name = "tomli"
 version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -537,6 +592,15 @@ wheels = [
 ]
 
 [[package]]
+name = "trove-classifiers"
+version = "2026.6.1.19"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/e3/7ca82ee24c82d344584abd5b8637b3bd056f2900226e8d82fc22f1184b92/trove_classifiers-2026.6.1.19.tar.gz", hash = "sha256:c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745", size = 17059, upload-time = "2026-06-01T19:41:34.649Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/a4/81502f486f01db95bc8320646a8a12511f5e556cb63d5e224d91816605c4/trove_classifiers-2026.6.1.19-py3-none-any.whl", hash = "sha256:ab4c4ec93cc4a4e7815fa759906e05e6bb3f2fbd92ea0f897288c6a43efd15b3", size = 14211, upload-time = "2026-06-01T19:41:33.434Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -555,4 +619,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/e3/70399cb7dd41c10ac53367ae42139cf4b1ca5f36bb3dc6c9d33acdb43655/typing_inspection-0.4.2.tar.gz", hash = "sha256:ba561c48a67c5958007083d386c3295464928b01faa735ab8547c5692e87f464", size = 75949, upload-time = "2025-10-01T02:14:41.687Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7", size = 14611, upload-time = "2025-10-01T02:14:40.154Z" },
+]
+
+[[package]]
+name = "vcs-versioning"
+version = "2.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/95/c95bb74950763a163defcf4cedf6c5edfca1d623fd5031b76516ece85076/vcs_versioning-2.2.2.tar.gz", hash = "sha256:4ac4ded78720cdb4d0291ae58ace87e1e9201912e1023f3029c6cce5c9152cfb", size = 143135, upload-time = "2026-06-29T13:26:06.901Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/9e/1f06f4ddc3a74ccfe0877490caaf4a5233e65401160afc8cb13207815f5e/vcs_versioning-2.2.2-py3-none-any.whl", hash = "sha256:fe7fb216f8780a5516e7864a9333aacb1b70015b087a9be3918da76ef2760808", size = 108014, upload-time = "2026-06-29T13:26:05.367Z" },
 ]
