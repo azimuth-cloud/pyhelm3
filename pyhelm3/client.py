@@ -1,8 +1,10 @@
 import contextlib
 import functools
+import os
 import pathlib
 import shutil
 import typing as t
+from pathlib import Path
 from warnings import warn
 
 import semver
@@ -64,6 +66,7 @@ class Client:
         kubetoken: t.Optional[str] = None,
         unpack_directory: t.Optional[str] = None,
     ):
+        self.check_executable_exists(executable)
         self._command = command or Command(
             default_timeout=default_timeout,
             executable=executable,
@@ -440,3 +443,10 @@ class Client:
         except ReleaseNotFoundError:
             # If the release does not exist, it is deleted :-)
             pass
+
+    def check_executable_exists(self, executable):
+        exe = Path(executable)
+        executable_file = exe.is_file() and os.access(exe, os.X_OK)
+        assert (
+            shutil.which(executable) or executable_file
+        ), f"Cannot find executable {executable}"
