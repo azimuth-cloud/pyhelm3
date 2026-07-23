@@ -1,0 +1,19 @@
+name: Lint Python files
+on:
+  push:
+
+jobs:
+  lint_python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+
+      - name: Run black
+        run: uv run black --check --diff pyhelm3 tests
+
+      - name: Run ruff check
+        run: uv run ruff check pyhelm3 tests

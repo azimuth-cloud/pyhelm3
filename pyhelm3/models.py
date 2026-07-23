@@ -4,32 +4,31 @@ import pathlib
 import typing as t
 
 import yaml
-
+from pydantic import AnyUrl as PydanticAnyUrl
 from pydantic import (
     BaseModel,
-    TypeAdapter,
-    Field,
-    PrivateAttr,
     DirectoryPath,
+    Field,
     FilePath,
-    AnyUrl as PydanticAnyUrl,
-    HttpUrl as PydanticHttpUrl,
+    PrivateAttr,
+    TypeAdapter,
     constr,
-    field_validator
+    field_validator,
 )
-
-from typing_extensions import Annotated
-OCIPath = Annotated[str, Field(pattern=r"oci:\/\/*")]
-
+from pydantic import HttpUrl as PydanticHttpUrl
 from pydantic.functional_validators import AfterValidator
+from typing_extensions import Annotated
 
 from .command import Command, SafeLoader
+
+OCIPath = Annotated[str, Field(pattern=r"oci:\/\/*")]
 
 
 class ModelWithCommand(BaseModel):
     """
     Base class for a model that has a Helm command object.
     """
+
     # The command object that is used to invoke Helm
     _command: Command = PrivateAttr()
 
@@ -39,21 +38,23 @@ class ModelWithCommand(BaseModel):
 
 
 #: Type for a non-empty string
-NonEmptyString = constr(min_length = 1)
+NonEmptyString = constr(min_length=1)
 
 
 #: Type for a name (chart or release)
-Name = constr(pattern = r"^[a-z0-9-]+$")
+Name = constr(pattern=r"^[a-z0-9-]+$")
 
 
 #: Type for a SemVer version
-SemVerVersion = constr(pattern = r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$")
+SemVerVersion = constr(
+    pattern=r"^v?\d+\.\d+\.\d+(-[a-zA-Z0-9\.\-]+)?(\+[a-zA-Z0-9\.\-]+)?$"
+)
 
 
 #: Type variables for forward references to the chart and release types
-ChartType = t.TypeVar("ChartType", bound = "Chart")
-ReleaseType = t.TypeVar("ReleaseType", bound = "Release")
-ReleaseRevisionType = t.TypeVar("ReleaseRevisionType", bound = "ReleaseRevision")
+ChartType = t.TypeVar("ChartType", bound="Chart")
+ReleaseType = t.TypeVar("ReleaseType", bound="Release")
+ReleaseRevisionType = t.TypeVar("ReleaseRevisionType", bound="ReleaseRevision")
 
 
 #: Type annotation for validating a string using a Pydantic type
@@ -71,37 +72,31 @@ class ChartDependency(BaseModel):
     """
     Model for a chart dependency.
     """
-    name: Name = Field(
-        ...,
-        description = "The name of the chart."
-    )
+
+    name: Name = Field(..., description="The name of the chart.")
     version: NonEmptyString = Field(
-        ...,
-        description = "The version of the chart. Can be a SemVer range."
+        ..., description="The version of the chart. Can be a SemVer range."
     )
-    repository: str = Field(
-        "",
-        description = "The repository URL or alias."
-    )
+    repository: str = Field("", description="The repository URL or alias.")
     condition: t.Optional[NonEmptyString] = Field(
         None,
-        description = "A yaml path that resolves to a boolean, used for enabling/disabling the chart."
+        description="A yaml path that resolves to a boolean, used for "
+        "enabling/disabling the chart.",
     )
     tags: t.List[NonEmptyString] = Field(
-        default_factory = list,
-        description = "Tags can be used to group charts for enabling/disabling together."
+        default_factory=list,
+        description="Tags can be used to group charts for enabling/disabling together.",
     )
     import_values: t.List[t.Union[t.Dict[str, str], str]] = Field(
-        default_factory = list,
-        alias = "import-values",
-        description = (
+        default_factory=list,
+        alias="import-values",
+        description=(
             "Mapping of source values to parent key to be imported. "
             "Each item can be a string or pair of child/parent sublist items."
-        )
+        ),
     )
     alias: t.Optional[NonEmptyString] = Field(
-        None,
-        description = "Alias to be used for the chart."
+        None, description="Alias to be used for the chart."
     )
 
 
@@ -109,89 +104,64 @@ class ChartMaintainer(BaseModel):
     """
     Model for the maintainer of a chart.
     """
-    name: NonEmptyString = Field(
-        ...,
-        description = "The maintainer's name."
-    )
+
+    name: NonEmptyString = Field(..., description="The maintainer's name.")
     email: t.Optional[NonEmptyString] = Field(
-        None,
-        description = "The maintainer's email."
+        None, description="The maintainer's email."
     )
-    url: t.Optional[AnyUrl] = Field(
-        None,
-        description = "A URL for the maintainer."
-    )
+    url: t.Optional[AnyUrl] = Field(None, description="A URL for the maintainer.")
 
 
 class ChartMetadata(BaseModel):
     """
     Model for chart metadata, from Chart.yaml.
     """
+
     api_version: t.Literal["v1", "v2"] = Field(
-        ...,
-        alias = "apiVersion",
-        description = "The chart API version."
+        ..., alias="apiVersion", description="The chart API version."
     )
-    name: Name = Field(
-        ...,
-        description = "The name of the chart."
-    )
-    version: SemVerVersion = Field(
-        ...,
-        description = "The version of the chart."
-    )
+    name: Name = Field(..., description="The name of the chart.")
+    version: SemVerVersion = Field(..., description="The version of the chart.")
     kube_version: t.Optional[NonEmptyString] = Field(
         None,
-        alias = "kubeVersion",
-        description = "A SemVer range of compatible Kubernetes versions for the chart."
+        alias="kubeVersion",
+        description="A SemVer range of compatible Kubernetes versions for the chart.",
     )
     description: t.Optional[NonEmptyString] = Field(
-        None,
-        description = "A single-sentence description of the chart."
+        None, description="A single-sentence description of the chart."
     )
     type: t.Literal["application", "library"] = Field(
-        "application",
-        description = "The type of the chart."
+        "application", description="The type of the chart."
     )
     keywords: t.List[NonEmptyString] = Field(
-        default_factory = list,
-        description = "List of keywords for the chart."
+        default_factory=list, description="List of keywords for the chart."
     )
     home: t.Optional[HttpUrl] = Field(
-        None,
-        description = "The URL of th home page for the chart."
+        None, description="The URL of th home page for the chart."
     )
     sources: t.List[AnyUrl] = Field(
-        default_factory = list,
-        description = "List of URLs to source code for this chart."
+        default_factory=list,
+        description="List of URLs to source code for this chart.",
     )
     dependencies: t.List[ChartDependency] = Field(
-        default_factory = list,
-        description = "List of the chart dependencies."
+        default_factory=list, description="List of the chart dependencies."
     )
     maintainers: t.List[ChartMaintainer] = Field(
-        default_factory = list,
-        description = "List of maintainers for the chart."
+        default_factory=list, description="List of maintainers for the chart."
     )
     icon: t.Optional[HttpUrl] = Field(
-        None,
-        description = "URL to an SVG or PNG image to be used as an icon."
+        None, description="URL to an SVG or PNG image to be used as an icon."
     )
     app_version: t.Optional[NonEmptyString] = Field(
         None,
-        alias = "appVersion",
-        description = (
-            "The version of the app that this chart deploys. "
-            "SemVer is not required."
-        )
+        alias="appVersion",
+        description=(
+            "The version of the app that this chart deploys. " "SemVer is not required."
+        ),
     )
-    deprecated: bool = Field(
-        False,
-        description = "Whether this chart is deprecated."
-    )
+    deprecated: bool = Field(False, description="Whether this chart is deprecated.")
     annotations: t.Dict[str, str] = Field(
-        default_factory = dict,
-        description = "Annotations for the chart."
+        default_factory=dict, description="Annotations for the chart."
     )
 
 
@@ -199,18 +169,19 @@ class Chart(ModelWithCommand):
     """
     Model for a reference to a chart.
     """
+
     ref: t.Union[DirectoryPath, FilePath, HttpUrl, Name, OCIPath] = Field(
         ...,
-        description = (
+        description=(
             "The chart reference. "
             "Can be a chart directory or a packaged chart archive on the local "
             "filesystem, the URL of a packaged chart or the name of a chart. "
             "When a name is given, repo must also be given and version may optionally "
             "be given."
-        )
+        ),
     )
-    repo: t.Optional[HttpUrl] = Field(None, description = "The repository URL.")
-    metadata: ChartMetadata = Field(..., description = "The metadata for the chart.")
+    repo: t.Optional[HttpUrl] = Field(None, description="The repository URL.")
+    metadata: ChartMetadata = Field(..., description="The metadata for the chart.")
 
     # Private attributes used to cache attributes
     _readme: str = PrivateAttr(None)
@@ -236,7 +207,7 @@ class Chart(ModelWithCommand):
         if isinstance(self.ref, (pathlib.Path, HttpUrl)):
             return await method(self.ref)
         else:
-            return await method(self.ref, repo = self.repo, version = self.metadata.version)
+            return await method(self.ref, repo=self.repo, version=self.metadata.version)
 
     async def readme(self) -> str:
         """
@@ -267,25 +238,17 @@ class Release(ModelWithCommand):
     """
     Model for a Helm release.
     """
-    name: Name = Field(
-        ...,
-        description = "The name of the release."
-    )
-    namespace: Name = Field(
-        ...,
-        description = "The namespace of the release." 
-    )
+
+    name: Name = Field(..., description="The name of the release.")
+    namespace: Name = Field(..., description="The namespace of the release.")
 
     async def current_revision(self) -> ReleaseRevisionType:
         """
         Returns the current revision for the release.
         """
         return ReleaseRevision._from_status(
-            await self._command.status(
-                self.name,
-                namespace = self.namespace
-            ),
-            self._command
+            await self._command.status(self.name, namespace=self.namespace),
+            self._command,
         )
 
     async def revision(self, revision: int) -> ReleaseRevisionType:
@@ -294,30 +257,28 @@ class Release(ModelWithCommand):
         """
         return ReleaseRevision._from_status(
             await self._command.status(
-                self.name,
-                namespace = self.namespace,
-                revision = revision
+                self.name, namespace=self.namespace, revision=revision
             ),
-            self._command
+            self._command,
         )
 
-    async def history(self, max_revisions: int = 256) -> t.Iterable[ReleaseRevisionType]:
+    async def history(
+        self, max_revisions: int = 256
+    ) -> t.Iterable[ReleaseRevisionType]:
         """
         Returns all the revisions for the release.
         """
         history = await self._command.history(
-            self.name,
-            max_revisions = max_revisions,
-            namespace = self.namespace
+            self.name, max_revisions=max_revisions, namespace=self.namespace
         )
         return (
             ReleaseRevision(
                 self._command,
-                release = self,
-                revision = revision["revision"],
-                status = revision["status"],
-                updated = revision["updated"],
-                description = revision.get("description")
+                release=self,
+                revision=revision["revision"],
+                status=revision["status"],
+                updated=revision["updated"],
+                description=revision.get("description"),
             )
             for revision in history
         )
@@ -332,24 +293,25 @@ class Release(ModelWithCommand):
         no_hooks: bool = False,
         recreate_pods: bool = False,
         timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        wait: bool = False,
     ) -> ReleaseRevisionType:
         """
-        Rollback this release to the specified version and return the resulting revision.
+        Rollback this release to the specified version and return the resulting
+        revision.
 
         If no revision is specified, it will rollback to the previous release.
         """
         await self._command.rollback(
             self.name,
             revision,
-            cleanup_on_fail = cleanup_on_fail,
-            dry_run = dry_run,
-            force = force,
-            namespace = self.namespace,
-            no_hooks = no_hooks,
-            recreate_pods = recreate_pods,
-            timeout = timeout,
-            wait = wait
+            cleanup_on_fail=cleanup_on_fail,
+            dry_run=dry_run,
+            force=force,
+            namespace=self.namespace,
+            no_hooks=no_hooks,
+            recreate_pods=recreate_pods,
+            timeout=timeout,
+            wait=wait,
         )
         return await self.current_revision()
 
@@ -360,7 +322,7 @@ class Release(ModelWithCommand):
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         # Indicates whether to show secret values in the diff
-        show_secrets: bool = True
+        show_secrets: bool = True,
     ) -> str:
         """
         Simulate a rollback to the specified revision and return the diff.
@@ -368,9 +330,9 @@ class Release(ModelWithCommand):
         return await self._command.diff_rollback(
             self.name,
             revision,
-            context_lines = context_lines,
-            namespace = self.namespace,
-            show_secrets = show_secrets
+            context_lines=context_lines,
+            namespace=self.namespace,
+            show_secrets=show_secrets,
         )
 
     async def simulate_upgrade(
@@ -395,15 +357,15 @@ class Release(ModelWithCommand):
             chart.ref,
             values,
             # The number of lines of context to show around each diff
-            context_lines = context_lines,
-            dry_run = dry_run,
-            namespace = self.namespace,
-            no_hooks = no_hooks,
-            repo = chart.repo,
-            reset_values = reset_values,
-            reuse_values = reuse_values,
-            show_secrets = show_secrets,
-            version = chart.metadata.version
+            context_lines=context_lines,
+            dry_run=dry_run,
+            namespace=self.namespace,
+            no_hooks=no_hooks,
+            repo=chart.repo,
+            reset_values=reset_values,
+            reuse_values=reuse_values,
+            show_secrets=show_secrets,
+            version=chart.metadata.version,
         )
 
     async def upgrade(
@@ -421,32 +383,33 @@ class Release(ModelWithCommand):
         reuse_values: bool = False,
         skip_crds: bool = False,
         timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        wait: bool = False,
     ) -> ReleaseRevisionType:
         """
-        Upgrade this release using the given chart and values and return the new revision.
+        Upgrade this release using the given chart and values and return the new
+        revision.
         """
         return ReleaseRevision._from_status(
             await self._command.install_or_upgrade(
                 self.name,
                 chart.ref,
                 values,
-                atomic = atomic,
-                cleanup_on_fail = cleanup_on_fail,
-                description = description,
-                dry_run = dry_run,
-                force = force,
-                namespace = self.namespace,
-                no_hooks = no_hooks,
-                repo = chart.repo,
-                reset_values = reset_values,
-                reuse_values = reuse_values,
-                skip_crds = skip_crds,
-                timeout = timeout,
-                version = chart.metadata.version,
-                wait = wait
+                atomic=atomic,
+                cleanup_on_fail=cleanup_on_fail,
+                description=description,
+                dry_run=dry_run,
+                force=force,
+                namespace=self.namespace,
+                no_hooks=no_hooks,
+                repo=chart.repo,
+                reset_values=reset_values,
+                reuse_values=reuse_values,
+                skip_crds=skip_crds,
+                timeout=timeout,
+                version=chart.metadata.version,
+                wait=wait,
             ),
-            self._command
+            self._command,
         )
 
     async def uninstall(
@@ -456,19 +419,19 @@ class Release(ModelWithCommand):
         keep_history: bool = False,
         no_hooks: bool = False,
         timeout: t.Union[int, str, None] = None,
-        wait: bool = False
+        wait: bool = False,
     ):
         """
         Uninstalls this release.
         """
         await self._command.uninstall(
             self.name,
-            dry_run = dry_run,
-            keep_history = keep_history,
-            namespace = self.namespace,
-            no_hooks = no_hooks,
-            timeout = timeout,
-            wait = wait
+            dry_run=dry_run,
+            keep_history=keep_history,
+            namespace=self.namespace,
+            no_hooks=no_hooks,
+            timeout=timeout,
+            wait=wait,
         )
 
 
@@ -476,6 +439,7 @@ class ReleaseRevisionStatus(str, enum.Enum):
     """
     Enumeration of possible release statuses.
     """
+
     #: Indicates that the revision is in an uncertain state
     UNKNOWN = "unknown"
     #: Indicates that the revision has been pushed to Kubernetes
@@ -500,6 +464,7 @@ class HookEvent(str, enum.Enum):
     """
     Enumeration of possible hook events.
     """
+
     PRE_INSTALL = "pre-install"
     POST_INSTALL = "post-install"
     PRE_DELETE = "pre-delete"
@@ -515,6 +480,7 @@ class HookDeletePolicy(str, enum.Enum):
     """
     Enumeration of possible delete policies for a hook.
     """
+
     HOOK_SUCCEEDED = "hook-succeeded"
     HOOK_FAILED = "hook-failed"
     HOOK_BEFORE_HOOK_CREATION = "before-hook-creation"
@@ -524,6 +490,7 @@ class HookPhase(str, enum.Enum):
     """
     Enumeration of possible phases for a hook.
     """
+
     #: Indicates that a hook is in an unknown state
     UNKNOWN = "Unknown"
     #: Indicates that a hook is currently executing
@@ -538,33 +505,20 @@ class Hook(BaseModel):
     """
     Model for a hook.
     """
-    name: NonEmptyString = Field(
-        ...,
-        description = "The name of the hook."
-    )
-    phase: HookPhase = Field(
-        HookPhase.UNKNOWN,
-        description = "The phase of the hook."
-    )
-    kind: NonEmptyString = Field(
-        ...,
-        description = "The kind of the hook."
-    )
+
+    name: NonEmptyString = Field(..., description="The name of the hook.")
+    phase: HookPhase = Field(HookPhase.UNKNOWN, description="The phase of the hook.")
+    kind: NonEmptyString = Field(..., description="The kind of the hook.")
     path: NonEmptyString = Field(
         ...,
-        description = "The chart-relative path to the template that produced the hook."
+        description="The chart-relative path to the template that produced the hook.",
     )
-    resource: t.Dict[str, t.Any] = Field(
-        ...,
-        description = "The resource for the hook."
-    )
+    resource: t.Dict[str, t.Any] = Field(..., description="The resource for the hook.")
     events: t.List[HookEvent] = Field(
-        default_factory = list,
-        description = "The events that the hook fires on."
+        default_factory=list, description="The events that the hook fires on."
     )
     delete_policies: t.List[HookDeletePolicy] = Field(
-        default_factory = list,
-        description = "The delete policies for the hook."
+        default_factory=list, description="The delete policies for the hook."
     )
 
 
@@ -572,36 +526,29 @@ class ReleaseRevision(ModelWithCommand):
     """
     Model for a revision of a release.
     """
+
     release: ReleaseType = Field(
-        ...,
-        description = "The parent release of this revision."
+        ..., description="The parent release of this revision."
     )
-    revision: int = Field(
-        ...,
-        description = "The revision number of this revision."
-    )
+    revision: int = Field(..., description="The revision number of this revision.")
     status: ReleaseRevisionStatus = Field(
-        ...,
-        description = "The status of the revision."
+        ..., description="The status of the revision."
     )
     updated: datetime.datetime = Field(
-        ...,
-        description = "The time at which this revision was updated."
+        ..., description="The time at which this revision was updated."
     )
     description: t.Optional[NonEmptyString] = Field(
-        None,
-        description = "'Log entry' for this revision."
+        None, description="'Log entry' for this revision."
     )
     notes: t.Optional[NonEmptyString] = Field(
-        None,
-        description = "The rendered notes for this revision, if available."
+        None, description="The rendered notes for this revision, if available."
     )
 
     # Optional fields if they are known at creation time
-    chart_metadata_: t.Optional[ChartMetadata] = Field(None, alias = "chart_metadata")
-    hooks_: t.Optional[t.List[t.Dict[str, t.Any]]] = Field(None, alias = "hooks")
-    resources_: t.Optional[t.List[t.Dict[str, t.Any]]] = Field(None, alias = "resources")
-    values_: t.Optional[t.Dict[str, t.Any]] = Field(None, alias = "values")
+    chart_metadata_: t.Optional[ChartMetadata] = Field(None, alias="chart_metadata")
+    hooks_: t.Optional[t.List[t.Dict[str, t.Any]]] = Field(None, alias="hooks")
+    resources_: t.Optional[t.List[t.Dict[str, t.Any]]] = Field(None, alias="resources")
+    values_: t.Optional[t.Dict[str, t.Any]] = Field(None, alias="values")
 
     def _set_from_status(self, status):
         # Statuses from install/upgrade have chart metadata embedded
@@ -609,24 +556,24 @@ class ReleaseRevision(ModelWithCommand):
             self.chart_metadata_ = ChartMetadata(**status["chart"]["metadata"])
         self.hooks_ = [
             Hook(
-                name = hook["name"],
-                phase = hook["last_run"].get("phase") or "Unknown",
-                kind = hook["kind"],
-                path = hook["path"],
-                resource = yaml.load(hook["manifest"], Loader = SafeLoader),
-                events = hook["events"],
-                delete_policies = hook.get("delete_policies", [])
+                name=hook["name"],
+                phase=hook["last_run"].get("phase") or "Unknown",
+                kind=hook["kind"],
+                path=hook["path"],
+                resource=yaml.load(hook["manifest"], Loader=SafeLoader),
+                events=hook["events"],
+                delete_policies=hook.get("delete_policies", []),
             )
             for hook in status.get("hooks", [])
         ]
-        self.resources_ = list(yaml.load_all(status["manifest"], Loader = SafeLoader))
+        self.resources_ = list(yaml.load_all(status["manifest"], Loader=SafeLoader))
 
     async def _init_from_status(self):
         self._set_from_status(
             await self._command.status(
                 self.release.name,
-                namespace = self.release.namespace,
-                revision = self.revision
+                namespace=self.release.namespace,
+                revision=self.revision,
             )
         )
 
@@ -637,12 +584,12 @@ class ReleaseRevision(ModelWithCommand):
         if self.chart_metadata_ is None:
             metadata = await self._command.get_chart_metadata(
                 self.release.name,
-                namespace = self.release.namespace,
-                revision = self.revision
+                namespace=self.release.namespace,
+                revision=self.revision,
             )
             self.chart_metadata_ = ChartMetadata(**metadata)
         return self.chart_metadata_
-    
+
     async def hooks(self) -> t.Iterable[Hook]:
         """
         Returns the hooks that were executed as part of this revision.
@@ -665,9 +612,9 @@ class ReleaseRevision(ModelWithCommand):
         """
         return await self._command.get_values(
             self.release.name,
-            computed = computed,
-            namespace = self.release.namespace,
-            revision = self.revision
+            computed=computed,
+            namespace=self.release.namespace,
+            revision=self.revision,
         )
 
     async def refresh(self) -> ReleaseRevisionType:
@@ -677,10 +624,10 @@ class ReleaseRevision(ModelWithCommand):
         return self.__class__._from_status(
             await self._command.status(
                 self.release.name,
-                namespace = self.release.namespace,
-                revision = self.revision
+                namespace=self.release.namespace,
+                revision=self.revision,
             ),
-            self._command
+            self._command,
         )
 
     async def diff(
@@ -690,7 +637,7 @@ class ReleaseRevision(ModelWithCommand):
         # The number of lines of context to show around each diff
         context_lines: t.Optional[int] = None,
         # Indicates whether to show secret values in the diff
-        show_secrets: bool = True
+        show_secrets: bool = True,
     ) -> str:
         """
         Returns the diff between this revision and the specified revision.
@@ -699,9 +646,9 @@ class ReleaseRevision(ModelWithCommand):
             self.release.name,
             self.revision,
             other_revision,
-            context_lines = context_lines,
-            namespace = self.release.namespace,
-            show_secrets = show_secrets
+            context_lines=context_lines,
+            namespace=self.release.namespace,
+            show_secrets=show_secrets,
         )
 
     @classmethod
@@ -711,16 +658,14 @@ class ReleaseRevision(ModelWithCommand):
         """
         revision = ReleaseRevision(
             command,
-            release = Release(
-                command,
-                name = status["name"],
-                namespace = status["namespace"]
+            release=Release(
+                command, name=status["name"], namespace=status["namespace"]
             ),
-            revision = status["version"],
-            status = status["info"]["status"],
-            updated = status["info"]["last_deployed"],
-            description = status["info"].get("description"),
-            notes = status["info"].get("notes")
+            revision=status["version"],
+            status=status["info"]["status"],
+            updated=status["info"]["last_deployed"],
+            description=status["info"].get("description"),
+            notes=status["info"].get("notes"),
         )
         revision._set_from_status(status)
         return revision
