@@ -1,6 +1,6 @@
 # pyhelm3
 
-Python library for managing Helm releases using Helm 3 (i.e. Tiller-less Helm).
+Python library for managing Helm releases using Helm 3 and later (i.e. Tiller-less Helm).
 
 ## Installation
 
@@ -61,7 +61,7 @@ revision = await client.install_or_upgrade_release(
     "cert-manager",
     chart,
     { "installCRDs": True },
-    atomic = True,
+    atomic = True, # when using a helm 3 client, rollback_on_failure=True when using a helm 4 client
     wait = True
 )
 print(
