@@ -177,7 +177,7 @@ class Client:
         sort_reversed: bool = False,
     ) -> t.Iterable[Release]:
         """
-        Returns an iterable of the deployed releases.
+        Returns an iterable of the requested releases as Release objects.
         """
         if self.version >= semver.VersionInfo.parse("4.0.0") and all:
             warn("helm list: Argument --all is deprecated in helm v4, dropping it")
@@ -192,7 +192,7 @@ class Client:
                 name=release["name"],
                 namespace=release["namespace"],
             )
-            for release in await self._command.list(
+            for release in await self.list_release_definitions(
                 all=all,
                 all_namespaces=all_namespaces,
                 include_deployed=include_deployed,
@@ -206,6 +206,48 @@ class Client:
                 sort_by_date=sort_by_date,
                 sort_reversed=sort_reversed,
             )
+        )
+
+    async def list_release_definitions(
+        self,
+        *,
+        all: bool = False,
+        all_namespaces: bool = False,
+        include_deployed: bool = True,
+        include_failed: bool = False,
+        include_pending: bool = False,
+        include_superseded: bool = False,
+        include_uninstalled: bool = False,
+        include_uninstalling: bool = False,
+        max_releases: int = 256,
+        namespace: t.Optional[str] = None,
+        sort_by_date: bool = False,
+        sort_reversed: bool = False,
+    ) -> t.Iterable[t.Dict[str, t.Any]]:
+        """
+        Returns an iterable of dicts of the requested releases ie the json
+        ˙˙˙output from helm list
+        """
+        if self.version >= semver.VersionInfo.parse("4.0.0") and all:
+            warn("helm list: Argument --all is deprecated in helm v4, dropping it")
+            # In helm v3 --all is additive with any other flags,
+            # in v4 any flags take precedence and disable --all
+            all = include_deployed = include_failed = include_pending = (
+                include_superseded
+            ) = include_uninstalled = include_uninstalling = False
+        return await self._command.list(
+            all=all,
+            all_namespaces=all_namespaces,
+            include_deployed=include_deployed,
+            include_failed=include_failed,
+            include_pending=include_pending,
+            include_superseded=include_superseded,
+            include_uninstalled=include_uninstalled,
+            include_uninstalling=include_uninstalling,
+            max_releases=max_releases,
+            namespace=namespace,
+            sort_by_date=sort_by_date,
+            sort_reversed=sort_reversed,
         )
 
     async def get_current_revision(
