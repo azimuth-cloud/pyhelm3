@@ -12,6 +12,7 @@ from pydantic import (
     FilePath,
     PrivateAttr,
     TypeAdapter,
+    UrlConstraints,
     constr,
     field_validator,
 )
@@ -63,9 +64,14 @@ def validate_str_as(validate_type):
     return lambda v: str(adapter.validate_python(v))
 
 
+class PydanticDataUrl(PydanticAnyUrl):
+    _constraints = UrlConstraints(allowed_schemes=["data"])
+
+
 #: Annotated string types for URLs
 AnyUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticAnyUrl))]
 HttpUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticHttpUrl))]
+DataUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticDataUrl))]
 
 
 class ChartDependency(BaseModel):
@@ -149,7 +155,7 @@ class ChartMetadata(BaseModel):
     maintainers: t.List[ChartMaintainer] = Field(
         default_factory=list, description="List of maintainers for the chart."
     )
-    icon: t.Optional[HttpUrl] = Field(
+    icon: t.Optional[HttpUrl | DataUrl] = Field(
         None, description="URL to an SVG or PNG image to be used as an icon."
     )
     app_version: t.Optional[NonEmptyString] = Field(
