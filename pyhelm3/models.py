@@ -392,6 +392,7 @@ class Release(ModelWithCommand):
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
+        take_ownership: bool = False,
         timeout: t.Union[int, str, None] = None,
         wait: bool = False,
     ) -> ReleaseRevisionType:
@@ -415,6 +416,7 @@ class Release(ModelWithCommand):
                 reset_values=reset_values,
                 reuse_values=reuse_values,
                 skip_crds=skip_crds,
+                take_ownership=take_ownership,
                 timeout=timeout,
                 version=chart.metadata.version,
                 wait=wait,

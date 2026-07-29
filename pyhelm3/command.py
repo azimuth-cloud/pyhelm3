@@ -546,6 +546,7 @@ class Command:
         reset_values: bool = False,
         reuse_values: bool = False,
         skip_crds: bool = False,
+        take_ownership: bool = False,
         timeout: t.Union[int, str, None] = None,
         version: t.Optional[str] = None,
         wait: bool = False,
@@ -598,6 +599,8 @@ class Command:
             command.append("--reuse-values")
         if skip_crds:
             command.append("--skip-crds")
+        if take_ownership:
+            command.append("--take-ownership")
         if version:
             command.extend(["--version", version])
         if wait:
