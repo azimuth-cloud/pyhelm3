@@ -1045,4 +1045,4 @@ class Command:
             shell_formatted_command, capture_output=True, check=True, shell=True
         )
         version_str = proc.stdout.decode().removeprefix("v")
-        return semver.parse_version_info(version_str)
+        return semver.VersionInfo.parse(version_str)
