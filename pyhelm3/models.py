@@ -4,20 +4,18 @@ import pathlib
 import typing as t
 
 import yaml
-from pydantic import AnyUrl as PydanticAnyUrl
 from pydantic import (
+    AnyUrl,
     BaseModel,
     DirectoryPath,
     Field,
     FilePath,
+    HttpUrl,
     PrivateAttr,
     TypeAdapter,
-    UrlConstraints,
     constr,
     field_validator,
 )
-from pydantic import HttpUrl as PydanticHttpUrl
-from pydantic.functional_validators import AfterValidator
 from typing_extensions import Annotated
 
 from .command import Command, SafeLoader
@@ -66,16 +64,6 @@ ReleaseRevisionType = t.TypeVar("ReleaseRevisionType", bound="ReleaseRevision")
 def validate_str_as(validate_type):
     adapter = TypeAdapter(validate_type)
     return lambda v: str(adapter.validate_python(v))
-
-
-class PydanticDataUrl(PydanticAnyUrl):
-    _constraints = UrlConstraints(allowed_schemes=["data"])
-
-
-#: Annotated string types for URLs
-AnyUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticAnyUrl))]
-HttpUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticHttpUrl))]
-DataUrl = t.Annotated[str, AfterValidator(validate_str_as(PydanticDataUrl))]
 
 
 class ChartDependency(BaseModel):
@@ -159,14 +147,14 @@ class ChartMetadata(BaseModel):
     maintainers: t.List[ChartMaintainer] = Field(
         default_factory=list, description="List of maintainers for the chart."
     )
-    icon: t.Optional[HttpUrl | DataUrl] = Field(
+    icon: t.Optional[AnyUrl] = Field(
         None, description="URL to an SVG or PNG image to be used as an icon."
     )
     app_version: t.Optional[NonEmptyString] = Field(
         None,
         alias="appVersion",
         description=(
-            "The version of the app that this chart deploys. " "SemVer is not required."
+            "The version of the app that this chart deploys. SemVer is not required."
         ),
     )
     deprecated: bool = Field(False, description="Whether this chart is deprecated.")
@@ -214,7 +202,7 @@ class Chart(ModelWithCommand):
         """
         method = getattr(self._command, command_method)
         # We only need the kwargs if the ref is not a direct reference
-        if isinstance(self.ref, (pathlib.Path, HttpUrl)):
+        if isinstance(self.ref, (HttpUrl, pathlib.Path)):
             return await method(self.ref)
         else:
             return await method(self.ref, repo=self.repo, version=self.metadata.version)
