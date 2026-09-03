@@ -302,7 +302,7 @@ class Client:
                     "using --force-replace instead but you may want --force-conflicts"
                 )
                 force = False
-                force_conflicts = True
+                force_replace = True
         if self.version < semver.VersionInfo.parse("4.0.0"):
             if rollback_on_failure:
                 warn(
