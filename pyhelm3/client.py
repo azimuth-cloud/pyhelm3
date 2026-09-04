@@ -9,6 +9,7 @@ from warnings import warn
 
 import semver
 import yaml
+from pydantic import AnyUrl
 
 from .command import Command, SafeLoader
 from .errors import ReleaseNotFoundError
@@ -104,7 +105,7 @@ class Client:
     @contextlib.asynccontextmanager
     async def pull_chart(
         self,
-        chart_ref: t.Union[pathlib.Path, str],
+        chart_ref: t.Union[pathlib.Path, str, AnyUrl],
         *,
         devel: bool = False,
         repo: t.Optional[str] = None,
@@ -273,6 +274,8 @@ class Client:
         description: t.Optional[str] = None,
         dry_run: bool = False,
         force: bool = False,
+        force_replace: bool = False,
+        force_conflicts: bool = False,
         namespace: t.Optional[str] = None,
         no_hooks: bool = False,
         reset_values: bool = False,
@@ -287,22 +290,40 @@ class Client:
         Install or upgrade the named release using the given chart and values and return
         the new revision.
         """
-        if self.version >= semver.VersionInfo.parse("4.0.0") and atomic:
-            warn(
-                "helm install|upgrade: Argument --atomic is deprecated in helm v4, "
-                "using --rollback-on-failure instead"
-            )
-        if self.version < semver.VersionInfo.parse("4.0.0") and rollback_on_failure:
-            warn(
-                "helm install|upgrade: Argument --rollback-on-failure is undefined "
-                "in helm v3, using --atomic instead"
-            )
+        if self.version >= semver.VersionInfo.parse("4.0.0"):
+            if atomic:
+                warn(
+                    "helm install|upgrade: Argument --atomic is deprecated in helm v4, "
+                    "using --rollback-on-failure instead"
+                )
+            if force:
+                warn(
+                    "helm install|upgrade: Argument --force is deprecated in helm v4,"
+                    "using --force-replace instead but you may want --force-conflicts"
+                )
+                force = False
+                force_replace = True
+        if self.version < semver.VersionInfo.parse("4.0.0"):
+            if rollback_on_failure:
+                warn(
+                    "helm install|upgrade: Argument --rollback-on-failure is undefined "
+                    "in helm v3, using --atomic instead"
+                )
+            if force_conflicts or force_replace:
+                warn(
+                    "helm install|upgrade: Arguments --force-replace and "
+                    "--force-conflicts are undefined in helm v3, using"
+                    "--force instead"
+                )
+                force_conflicts = force_replace = False
+                force = True
         atomic = atomic or rollback_on_failure
         atomic_arg = (
             "--atomic"
             if self.version < semver.VersionInfo.parse("4.0.0")
             else "--rollback-on-failure"
         )
+
         return ReleaseRevision._from_status(
             await self._command.install_or_upgrade(
                 release_name,
@@ -315,6 +336,8 @@ class Client:
                 description=description,
                 dry_run=dry_run,
                 force=force,
+                force_replace=force_replace,
+                force_conflicts=force_conflicts,
                 namespace=namespace,
                 no_hooks=no_hooks,
                 repo=chart.repo,

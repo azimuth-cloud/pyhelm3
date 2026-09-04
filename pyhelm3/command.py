@@ -540,6 +540,8 @@ class Command:
         debug: bool = False,
         dry_run: bool = False,
         force: bool = False,
+        force_replace: bool = False,
+        force_conflicts: bool = False,
         namespace: t.Optional[str] = None,
         no_hooks: bool = False,
         repo: t.Optional[str] = None,
@@ -587,6 +589,10 @@ class Command:
             command.append("--dry-run")
         if force:
             command.append("--force")
+        if force_replace:
+            command.append("--force-replace")
+        if force_conflicts:
+            command.append("--force-conflicts")
         if namespace:
             command.extend(["--namespace", namespace])
         if no_hooks:
