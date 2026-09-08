@@ -280,6 +280,7 @@ class Client:
         no_hooks: bool = False,
         reset_values: bool = False,
         reuse_values: bool = False,
+        server_side: t.Optional[str] = None,
         skip_crds: bool = False,
         take_ownership: bool = False,
         timeout: t.Union[int, str, None] = None,
@@ -317,6 +318,12 @@ class Client:
                 )
                 force_conflicts = force_replace = False
                 force = True
+            if server_side:
+                warn(
+                    "helm install|upgrade: Argument --server-side is undefined"
+                    "in helm v3, dropping it"
+                )
+                server_side = None
         atomic = atomic or rollback_on_failure
         atomic_arg = (
             "--atomic"
@@ -343,6 +350,7 @@ class Client:
                 repo=chart.repo,
                 reset_values=reset_values,
                 reuse_values=reuse_values,
+                server_side=server_side,
                 skip_crds=skip_crds,
                 take_ownership=take_ownership,
                 timeout=timeout,

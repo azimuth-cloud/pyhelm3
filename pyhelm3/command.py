@@ -547,6 +547,7 @@ class Command:
         repo: t.Optional[str] = None,
         reset_values: bool = False,
         reuse_values: bool = False,
+        server_side: t.Optional[str] = None,
         skip_crds: bool = False,
         take_ownership: bool = False,
         timeout: t.Union[int, str, None] = None,
@@ -603,6 +604,8 @@ class Command:
             command.append("--reset-values")
         if reuse_values:
             command.append("--reuse-values")
+        if server_side:
+            command.append(f"--server-side={server_side}")
         if skip_crds:
             command.append("--skip-crds")
         if take_ownership:
