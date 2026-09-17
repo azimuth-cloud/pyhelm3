@@ -616,7 +616,20 @@ class Command:
             command.extend(["--wait", "--wait-for-jobs"])
         if disable_validation:
             command.extend("--disable-openapi-validation")
-        return json.loads(await self.run(command, json.dumps(values or {}).encode()))
+
+        def prune_oci_registry_stdout(stdout: bytes) -> bytes:
+            # Starting with Helm v4.2.1 https://github.com/helm/helm/pull/32056 routed
+            # OCI registry information to stdout. https://github.com/helm/helm/pull/32217
+            # rolled this back for 'template' and 'show' but it remains for
+            # 'install'/'upgrade'. We could try skipping over lines starting with
+            # 'Pulled:' and 'Digest:' but there's also multi-line messages about
+            # remapping + to _ for OCI charts with + in their versions. So just hunt for
+            # the start of JSON
+            start_of_json = stdout.index(b"{")
+            return stdout[start_of_json:]
+
+        input = json.dumps(values or {}).encode()
+        return json.loads(prune_oci_registry_stdout(await self.run(command, input)))
 
     async def list(
         self,
