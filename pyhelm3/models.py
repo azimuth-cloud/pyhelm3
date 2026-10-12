@@ -45,7 +45,7 @@ Name = constr(pattern=r"^[a-z0-9-]+$")
 
 
 #: Type for a chart dependency name/alias
-DependencyNameOrAlias = constr(pattern=r"^[a-zA-Z0-9_-]+$")
+DependencyNameOrAlias = constr(pattern=r"^[a-zA-Z0-9._-]+$")
 
 
 #: Type for a SemVer version
